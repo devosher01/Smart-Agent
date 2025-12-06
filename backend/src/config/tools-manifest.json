@@ -1,0 +1,26 @@
+{
+	"endpoints": [
+		{
+			"id": "validate_id",
+			"name": "Validate ID (Cedula)",
+			"url": "https://verifik.app/v2/x402/validate-id",
+			"method": "POST",
+			"description": "Validates a Colombian Citizenship ID (Cedula) and returns the citizen's information.",
+			"parameters": {
+				"type": "object",
+				"properties": {
+					"documentType": {
+						"type": "string",
+						"description": "The type of document (e.g., 'CC' for Cedula de Ciudadania)",
+						"enum": ["CC", "CE", "TI"]
+					},
+					"documentNumber": {
+						"type": "string",
+						"description": "The document number to validate"
+					}
+				},
+				"required": ["documentType", "documentNumber"]
+			}
+		}
+	]
+}

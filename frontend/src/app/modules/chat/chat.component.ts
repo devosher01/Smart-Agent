@@ -2,6 +2,7 @@ import { Component, OnInit, ViewChild, ElementRef, signal } from '@angular/core'
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { environment } from 'environments/environment';
 import { AgentWalletService } from './services/agent-wallet.service';
 
 interface ChatMessage {
@@ -55,7 +56,7 @@ interface AgentInfo {
 export class ChatComponent implements OnInit {
   @ViewChild('scrollContainer') private scrollContainer!: ElementRef;
 
-  baseUrl = 'http://localhost:3006';
+  baseUrl = environment.baseUrl;
   messages = signal<ChatMessage[]>([]);
   userInput = signal('');
   isLoading = signal(false);
@@ -76,10 +77,13 @@ export class ChatComponent implements OnInit {
   availableTags = ['fast', 'accurate', 'helpful', 'reliable', 'easy-to-use'];
 
   // Backend URLs
-  private apiUrl = `${this.baseUrl}/v2/agent/chat`;
-  private agentInfoUrl = `${this.baseUrl}/v2/agent/info`;
+  private apiUrl = `${environment.smartAgentUrl}/api/agent/chat`;
+  private agentInfoUrl = `${environment.smartAgentUrl}/api/agent/info`;
 
-  constructor(private http: HttpClient, public walletService: AgentWalletService) {}
+  constructor(
+    private http: HttpClient,
+    public walletService: AgentWalletService,
+  ) {}
 
   async ngOnInit() {
     this.walletAddress.set(this.walletService.getAddress());
@@ -167,7 +171,7 @@ export class ChatComponent implements OnInit {
         rating,
         tags,
         comment,
-        paymentTxHash
+        paymentTxHash,
       );
 
       console.log('Feedback transaction sent:', tx.hash);
@@ -247,7 +251,7 @@ export class ChatComponent implements OnInit {
         if (response.data && response.role === 'assistant') {
           // Store the last payment transaction if available
           const paymentMsg = this.messages().find(
-            (m) => m.role === 'system' && m.content.includes('TX:')
+            (m) => m.role === 'system' && m.content.includes('TX:'),
           );
           if (paymentMsg) {
             const txMatch = paymentMsg.content.match(/TX: (0x[a-fA-F0-9]+)/);
@@ -281,7 +285,7 @@ export class ChatComponent implements OnInit {
           contractAddress,
           serviceId,
           requestId,
-          amount
+          amount,
         );
         console.log('Transaction sent:', tx.hash);
 
@@ -335,7 +339,7 @@ export class ChatComponent implements OnInit {
   async resetWallet() {
     if (
       confirm(
-        'Are you sure you want to reset your wallet? This will generate a new address and you will lose access to the current one.'
+        'Are you sure you want to reset your wallet? This will generate a new address and you will lose access to the current one.',
       )
     ) {
       this.walletService.resetWallet();

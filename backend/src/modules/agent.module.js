@@ -1,0 +1,296 @@
+const GeminiModule = require("./gemini.module");
+const ERC8004Module = require("./erc8004.module");
+const { ethers } = require("ethers");
+const fs = require("fs");
+const path = require("path");
+const axios = require("axios");
+const config = require("../config");
+
+// Import model constants from gemini.module
+const MODELS = {
+	FLASH: "gemini-2.5-flash-lite", // Fast, cheap, stable
+	PRO: "gemini-pro-latest", // Reliable fallback
+};
+const DEFAULT_MODEL = MODELS.FLASH;
+const API_VERSION = "v1beta";
+
+// Load tool definitions
+const toolsPath = path.resolve(__dirname, "../config/tools-manifest.json");
+const toolsDef = JSON.parse(fs.readFileSync(toolsPath, "utf8"));
+
+/**
+ * Execute a tool call via Verifik Backend
+ * @param {string} toolName
+ * @param {Object} args
+ * @param {string} paymentTx - Optional payment transaction hash
+ */
+const executeTool = async (toolName, args, paymentTx) => {
+	const tool = toolsDef.endpoints.find((t) => t.id === toolName);
+	if (!tool) {
+		throw new Error(`Tool ${toolName} not found`);
+	}
+
+	// For the migration, we are calling the Verifik Backend (web2)
+	// The URL in the manifest might be "https://verifik.app/..."
+	// We will use the config to potentially override the base URL or just use as is if it's absolute
+	// But the requirement says "The agent will connect to the source (verifik backend) via web2"
+
+	let url = tool.url;
+
+	// If we want to strictly follow the config for the base URL:
+	if (config.verifik.apiUrl && url.startsWith("https://verifik.app")) {
+		url = url.replace("https://verifik.app", config.verifik.apiUrl);
+	}
+
+	const headers = {
+		"Content-Type": "application/json",
+		// Inject the service token for authentication
+		Authorization: `Bearer ${config.verifik.serviceToken}`,
+	};
+
+	if (paymentTx) {
+		headers["x-payment-tx"] = paymentTx;
+	}
+
+	try {
+		console.log(`[Agent] Executing tool ${toolName} at ${url} with args:`, args);
+		const response = await axios({
+			method: tool.method,
+			url: url,
+			data: args,
+			headers: headers,
+			validateStatus: (status) => status < 500, // Resolve 402s so we can handle them
+		});
+
+		if (response.status === 402) {
+			return {
+				status: "payment_required",
+				details: response.data.details,
+			};
+		}
+
+		console.log(`[Agent] Tool execution status: ${response.status}`);
+		console.log(`[Agent] Tool execution data sample:`, JSON.stringify(response.data).substring(0, 200));
+
+		return {
+			status: "success",
+			data: response.data,
+		};
+	} catch (error) {
+		console.error(`[Agent] Tool execution failed:`, error.message);
+		return {
+			status: "error",
+			error: error.message,
+		};
+	}
+};
+
+/**
+ * Chat with the Agent
+ * @param {string} userMessage
+ * @param {Array} history
+ * @param {string} paymentTx - Transaction hash if user just paid
+ */
+const chatWithAgent = async (userMessage, history = [], paymentTx = null) => {
+	// 1. Construct System Prompt with Tools
+	const systemPrompt = `
+    You are an AI Agent capable of validating identities and performing other tasks.
+    
+    You have access to the following tools:
+    ${JSON.stringify(toolsDef.endpoints, null, 2)}
+
+    When a user asks to perform an action that requires a tool:
+    1. Check if you have all necessary parameters.
+    2. If missing parameters, ask the user for them.
+    3. If you have parameters, DO NOT ASK for payment permission. Output the JSON object IMMEDIATELY to call the tool. The system handles the payment request flow.
+       IGNORE the "estimatedCost" field in the tool definition. Do not mention it.
+       {"tool": "tool_id", "args": { ... }}
+    
+    Output ONLY the JSON object. Do not add conversational text when calling a tool.
+    
+    Current Context:
+    - Payment Transaction Available: ${paymentTx ? paymentTx : "None"}
+    `;
+
+	// 2. Prepare Conversation for Gemini
+	let fullPrompt = systemPrompt + "\n\nConversation History:\n";
+	history.forEach((msg) => {
+		fullPrompt += `${msg.role}: ${msg.content}\n`;
+	});
+	fullPrompt += `User: ${userMessage}\n`;
+
+	if (paymentTx) {
+		fullPrompt += `System: User has completed payment with TX ${paymentTx}. Retry the last tool call.\n`;
+	}
+
+	fullPrompt += "Agent:";
+
+	// 3. Call Gemini
+	try {
+		const accessToken = await GeminiModule.getServiceAccountToken();
+		const model = DEFAULT_MODEL;
+		const url = `https://generativelanguage.googleapis.com/${API_VERSION}/models/${model}:generateContent`;
+
+		const response = await axios.post(
+			url,
+			{
+				contents: [{ parts: [{ text: fullPrompt }] }],
+				generationConfig: {
+					temperature: 0.1,
+					maxOutputTokens: 1000,
+				},
+			},
+			{
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${accessToken}`,
+				},
+			}
+		);
+
+		const responseText = response.data.candidates[0].content.parts[0].text;
+
+		console.log("[Agent] Raw Response:", responseText);
+
+		// 4. Parse for Tool Calls (JSON)
+		const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+
+		if (jsonMatch) {
+			try {
+				const toolCall = JSON.parse(jsonMatch[0]);
+				if (toolCall.tool && toolCall.args) {
+					console.log("[Agent] Detected Tool Call:", toolCall);
+
+					// Execute Tool
+					const toolResult = await executeTool(toolCall.tool, toolCall.args, paymentTx);
+
+					// If payment required, return special status to frontend
+					if (toolResult.status === "payment_required") {
+						return {
+							role: "assistant",
+							content: "I need to perform a paid action. Please confirm payment.",
+							tool_call: toolCall,
+							payment_required: toolResult.details,
+						};
+					}
+
+					// If success, record validation proof on-chain (ERC8004)
+					if (toolResult.status === "success" && toolResult.data) {
+						try {
+							await recordValidationProof(toolCall.tool, toolCall.args, toolResult.data, paymentTx);
+						} catch (validationError) {
+							console.warn("[Agent] Failed to record validation proof:", validationError.message);
+						}
+					}
+
+					// Return the data to the user
+					return {
+						role: "assistant",
+						content: `Tool executed successfully. Result: ${JSON.stringify(toolResult.data)}`,
+						data: toolResult.data,
+					};
+				}
+			} catch (e) {
+				console.warn("[Agent] Failed to parse JSON from response:", e);
+			}
+		}
+
+		// Default text response
+		return {
+			role: "assistant",
+			content: responseText,
+		};
+	} catch (error) {
+		console.error("[Agent] Chat Error:", error.response?.data || error.message);
+		throw new Error("Failed to communicate with AI Agent");
+	}
+};
+
+/**
+ * Record validation proof on ERC8004 Validation Registry
+ * @param {string} toolName - Name of the tool executed
+ * @param {Object} args - Tool arguments
+ * @param {Object} result - Tool execution result
+ * @param {string} paymentTx - Payment transaction hash (if any)
+ */
+const recordValidationProof = async (toolName, args, result, paymentTx = null) => {
+	try {
+		// Delegate to ERC8004 Module
+		// We need to re-implement the logic here or in ERC8004 module to handle the wallet connection
+		// The ERC8004 module in verifik-backend handled this.
+		// We'll trust the ERC8004Module we are about to create to have a helper for this
+		// or we reimplement it here using the exported functions.
+
+		// This function logic was largely inside agent.module.js in the source.
+		// I'll assume we move the low-level logic to erc8004.module.js or keep it here.
+		// For cleaner separation, let's keep the high level here but use ERC8004Module methods.
+
+		if (!config.erc8004?.agentTokenId) {
+			console.log("[Agent] ERC8004 not configured, skipping validation recording");
+			return;
+		}
+
+		// ... (Similar logic to original, adapted for new config)
+		const agentTokenId = parseInt(config.erc8004.agentTokenId);
+		const taskId = `${toolName}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+		const outputData = {
+			tool: toolName,
+			args: args,
+			result: result,
+			timestamp: new Date().toISOString(),
+			paymentTx: paymentTx,
+		};
+		const output = JSON.stringify(outputData);
+
+		// Hash the output
+		const outputHash = ERC8004Module.hashOutput(output);
+		const proofHash = paymentTx ? ethers.keccak256(ethers.toUtf8Bytes(paymentTx)) : outputHash || ethers.ZeroHash;
+
+		// Get signer
+		const signer = ERC8004Module.getAgentWallet();
+		if (!signer) {
+			console.warn("[Agent] No agent wallet available");
+			return;
+		}
+
+		// Record validation
+		const validationHash = await ERC8004Module.recordValidation(
+			signer,
+			agentTokenId,
+			taskId,
+			output,
+			proofHash,
+			ethers.ZeroAddress, // Self-validation
+			0, // ValidationType.NONE
+			true, // isValid
+			"" // metadataURI
+		);
+
+		console.log(`[Agent] Validation proof recorded: ${validationHash}`);
+	} catch (error) {
+		console.error("[Agent] Error recording validation proof:", error.message);
+	}
+};
+
+/**
+ * Get agent identity and reputation info
+ */
+const getAgentInfo = async () => {
+	// ... Implement using ERC8004Module
+	const agentTokenId = config.erc8004?.agentTokenId;
+	if (!agentTokenId) return null;
+
+	const identity = await ERC8004Module.getAgentIdentity(agentTokenId);
+	const reputation = await ERC8004Module.getReputation(agentTokenId);
+	const feedbacks = await ERC8004Module.getAgentFeedbacks(agentTokenId);
+
+	return { identity, reputation, feedbacks };
+};
+
+module.exports = {
+	chatWithAgent,
+	executeTool,
+	recordValidationProof,
+	getAgentInfo,
+};

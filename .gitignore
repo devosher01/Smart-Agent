@@ -1,0 +1,69 @@
+# See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+
+# Dependencies
+node_modules/
+
+# Compiled output
+/dist
+/tmp
+/out-tsc
+/bazel-out
+/frontend/node_modules
+frontend/tmp/
+frontend/out-tsc/
+backend/dist/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+debug.log
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+*.env
+
+# IDEs and editors
+.idea/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/*
+*.swp
+*.swo
+
+# Angular specific
+.angular/
+.sass-cache/
+connect.lock
+coverage/
+libpeerconnection.log
+testem.log
+typings/
+__screenshots__/
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# OS System files
+.DS_Store
+Thumbs.db
+
+# Sensitive Config Files (Backend)
+backend/src/config/gemini_key.json
+backend/src/config/google_key.json

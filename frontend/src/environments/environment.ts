@@ -1,6 +1,7 @@
 export const environment = {
   production: false,
   baseUrl: 'http://localhost:3006',
+  smartAgentUrl: 'http://localhost:3060',
   apiUrl: 'https://verifik.app',
   appUrl: 'http://localhost:3006',
   projectId: '6266193db77ccc8111730c90',
