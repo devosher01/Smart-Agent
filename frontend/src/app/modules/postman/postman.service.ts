@@ -31,25 +31,34 @@ export class PostmanService {
         tap((response) => {
           if (response && response.data) {
             const features = response.data || [];
-            const dynamicEndpoints: ApiEndpoint[] = features.map((f: any) => ({
-              id: f._id || f.code,
-              label: f.name,
-              category: this._mapCategory(f.baseCategory || f.group),
+            const dynamicEndpoints: ApiEndpoint[] = features.map((feature: any) => ({
+              id: feature._id || feature.code,
+              label: feature.name,
+              category: this._mapCategory(feature.baseCategory || feature.group),
               method: 'POST',
               // Use the feature's URL if absolute, else prepend apiUrl
-              url: f.url ? (f.url.startsWith('http') ? f.url : `${apiUrl}${f.url}`) : '',
-              description: f.description,
+              url: feature.url
+                ? feature.url.startsWith('http')
+                  ? feature.url
+                  : `${apiUrl}/${feature.url}`
+                : '',
+              description: feature.description,
               headers: [
                 { key: 'Content-Type', value: 'application/json' },
-                { key: 'Authorization', value: 'Bearer <token>' },
+                {
+                  key: 'Authorization',
+                  value: localStorage.getItem('accessToken')
+                    ? `Bearer ${localStorage.getItem('accessToken')}`
+                    : 'Bearer <token>',
+                },
               ],
-              params: f.dependencies
-                ? f.dependencies.map((dep: any) => ({
-                    key: dep.field,
-                    value: dep.default || '',
-                    type: dep.type,
-                    required: dep.required,
-                    description: dep.description, // Using generic description as not present in example, but interface allows it
+              params: feature.dependencies
+                ? feature.dependencies.map((dependency: any) => ({
+                    key: dependency.field,
+                    value: dependency.default || '',
+                    type: dependency.type,
+                    required: dependency.required,
+                    description: dependency.description,
                   }))
                 : [],
             }));
@@ -57,8 +66,12 @@ export class PostmanService {
             this.endpoints.update((current) => {
               // Avoid duplicates if this runs multiple times or hot reloads
               // Simple check by ID
-              const existingIds = new Set(current.map((e) => e.id));
-              const newEndpoints = dynamicEndpoints.filter((e) => !existingIds.has(e.id));
+              const existingIds = new Set(current.map((endpoint) => endpoint.id));
+
+              const newEndpoints = dynamicEndpoints.filter(
+                (endpoint) => !existingIds.has(endpoint.id),
+              );
+
               return [...current, ...newEndpoints];
             });
           }

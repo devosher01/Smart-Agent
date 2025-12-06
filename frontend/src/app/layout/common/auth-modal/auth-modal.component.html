@@ -1,0 +1,270 @@
+<div class="w-full max-w-sm mx-auto p-2">
+  <!-- Header -->
+  <div class="text-center mb-8">
+    <!-- Logo or brand -->
+    <div class="w-12 h-12 bg-slate-100 rounded-full mx-auto flex items-center justify-center mb-4">
+      <mat-icon class="text-slate-900 !w-6 !h-6 !text-[24px]">lock</mat-icon>
+    </div>
+    <h2 class="text-xl font-bold text-slate-900 dark:text-white">Log in</h2>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error()" class="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm text-center">
+    {{ error() }}
+  </div>
+
+  <!-- CHOICE State -->
+  <div *ngIf="state() === 'CHOICE'" class="space-y-3">
+    <button
+      mat-stroked-button
+      class="w-full !h-12 !justify-start !px-4 !rounded-lg !border-slate-300 dark:!border-slate-700"
+      (click)="startEmailFlow()"
+    >
+      <mat-icon class="mr-3 text-slate-500">mail</mat-icon>
+      <span class="text-slate-700 dark:text-slate-300">Continue with Email</span>
+    </button>
+
+    <button
+      mat-stroked-button
+      class="w-full !h-12 !justify-start !px-4 !rounded-lg !border-slate-300 dark:!border-slate-700"
+      (click)="startPhoneFlow()"
+    >
+      <mat-icon class="mr-3 text-slate-500">smartphone</mat-icon>
+      <span class="text-slate-700 dark:text-slate-300">Continue with SMS</span>
+    </button>
+
+    <div class="relative py-2">
+      <div class="absolute inset-0 flex items-center">
+        <div class="w-full border-t border-slate-200 dark:border-slate-700"></div>
+      </div>
+      <div class="relative flex justify-center text-xs uppercase">
+        <span class="bg-white dark:bg-slate-800 px-2 text-slate-500">Or</span>
+      </div>
+    </div>
+
+    <button
+      mat-stroked-button
+      class="w-full !h-12 !justify-start !px-4 !rounded-lg !border-slate-300 dark:!border-slate-700"
+      (click)="startWalletFlow()"
+    >
+      <mat-icon class="mr-3 text-slate-500">account_balance_wallet</mat-icon>
+      <span class="text-slate-700 dark:text-slate-300">Continue with a wallet</span>
+    </button>
+
+    <div class="pt-4 text-center">
+      <span class="text-sm text-slate-500">Don't have an account?</span>
+      <a class="text-sm text-blue-600 font-semibold ml-1 cursor-pointer hover:underline">Sign up</a>
+    </div>
+  </div>
+
+  <!-- EMAIL INPUT State -->
+  <div *ngIf="state() === 'EMAIL_INPUT'" class="space-y-4">
+    <div class="relative">
+      <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">mail</mat-icon>
+      <input
+        [ngModel]="email()"
+        (ngModelChange)="email.set($event)"
+        type="email"
+        placeholder="name@example.com"
+        class="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
+        (keyup.enter)="sendEmailOtp()"
+      />
+    </div>
+
+    <button
+      mat-flat-button
+      color="primary"
+      class="w-full !h-11 !rounded-lg"
+      [disabled]="!isEmailValid || isLoading()"
+      (click)="sendEmailOtp()"
+    >
+      <span *ngIf="!isLoading()">Continue</span>
+      <mat-progress-spinner
+        *ngIf="isLoading()"
+        diameter="20"
+        mode="indeterminate"
+      ></mat-progress-spinner>
+    </button>
+
+    <button mat-button class="w-full" (click)="setState('CHOICE')">Back</button>
+  </div>
+
+  <!-- PHONE INPUT State -->
+  <div *ngIf="state() === 'PHONE_INPUT'" class="space-y-4">
+    <div class="flex space-x-2">
+      <!-- Country Code Selector -->
+      <div class="relative country-selector-container">
+        <button
+          #countryButton
+          type="button"
+          (click)="toggleCountryDropdown()"
+          class="w-28 px-3 py-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
+        >
+          <span class="flex items-center gap-2 text-sm">
+            <span *ngIf="selectedCountry()">{{ selectedCountry()!.flag }}</span>
+            <span *ngIf="selectedCountry()" class="font-medium">{{
+              selectedCountry()!.dialCode
+            }}</span>
+            <span *ngIf="!selectedCountry()" class="text-slate-400">Select</span>
+          </span>
+          <mat-icon class="!w-4 !h-4 !text-[16px] text-slate-400">arrow_drop_down</mat-icon>
+        </button>
+
+        <!-- Dropdown Menu -->
+        <div
+          *ngIf="isCountryDropdownOpen() && dropdownPosition()"
+          class="fixed z-[1000] w-80 max-h-80 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden"
+          [style.top]="dropdownPosition()!.top"
+          [style.left]="dropdownPosition()!.left"
+        >
+          <!-- Search Input -->
+          <div class="p-2 border-b border-slate-200 dark:border-slate-700">
+            <div class="relative">
+              <mat-icon
+                class="absolute left-2 top-1/2 -translate-y-1/2 !w-4 !h-4 !text-[16px] text-slate-400"
+                >search</mat-icon
+              >
+              <input
+                type="text"
+                [value]="countrySearchTerm()"
+                (input)="onCountrySearchChange($any($event.target).value)"
+                placeholder="Search country..."
+                class="w-full pl-8 pr-3 py-2 text-sm rounded-md border border-slate-300 dark:border-slate-600 bg-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                (click)="$event.stopPropagation()"
+              />
+            </div>
+          </div>
+
+          <!-- Country List -->
+          <div class="max-h-64 overflow-y-auto">
+            <button
+              *ngFor="let country of filteredCountries()"
+              type="button"
+              (click)="selectCountry(country)"
+              class="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-left transition-colors"
+              [class.bg-blue-50]="selectedCountry()?.dialCode === country.dialCode"
+            >
+              <span class="text-2xl">{{ country.flag }}</span>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                  {{ country.name }}
+                </div>
+              </div>
+              <span class="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                {{ country.dialCode }}
+              </span>
+            </button>
+            <div
+              *ngIf="filteredCountries().length === 0"
+              class="px-4 py-3 text-sm text-slate-500 text-center"
+            >
+              No countries found
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Phone Input -->
+      <input
+        [ngModel]="phone()"
+        (input)="onPhoneInput($event)"
+        type="tel"
+        placeholder="201 555 0123"
+        class="flex-1 px-4 py-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
+        (keyup.enter)="sendPhoneOtp()"
+      />
+    </div>
+
+    <button
+      mat-flat-button
+      color="primary"
+      class="w-full !h-11 !rounded-lg"
+      [disabled]="!phone() || !selectedCountry() || isLoading()"
+      (click)="sendPhoneOtp()"
+    >
+      <span *ngIf="!isLoading()">Continue</span>
+      <mat-progress-spinner
+        *ngIf="isLoading()"
+        diameter="20"
+        mode="indeterminate"
+      ></mat-progress-spinner>
+    </button>
+
+    <button mat-button class="w-full" (click)="setState('CHOICE')">Back</button>
+  </div>
+
+  <!-- OTP State (Email or Phone) -->
+  <div *ngIf="state() === 'OTP_VERIFY_EMAIL' || state() === 'OTP_VERIFY_PHONE'" class="space-y-6">
+    <div class="text-center space-y-2">
+      <h3 class="font-bold">Enter confirmation code</h3>
+      <p class="text-sm text-slate-500">
+        Please check {{ state() === 'OTP_VERIFY_EMAIL' ? email() : phone() }} for a message and
+        enter your code below.
+      </p>
+    </div>
+
+    <div class="flex justify-between gap-2">
+      <input
+        *ngFor="let digit of otpArray(); let i = index"
+        [id]="'otp-' + i"
+        type="text"
+        inputmode="numeric"
+        maxlength="1"
+        [value]="digit"
+        (input)="onOtpInput($event, i)"
+        (keydown)="onKeyDown($event, i)"
+        class="w-12 h-14 text-center text-2xl font-bold rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none"
+      />
+    </div>
+
+    <button
+      mat-flat-button
+      color="primary"
+      class="w-full !h-11 !rounded-lg"
+      [disabled]="otpArray().join('').length !== 6 || isLoading()"
+      (click)="state() === 'OTP_VERIFY_EMAIL' ? verifyEmailOtp() : verifyPhoneOtp()"
+    >
+      <span *ngIf="!isLoading()">Verify</span>
+      <mat-progress-spinner
+        *ngIf="isLoading()"
+        diameter="20"
+        mode="indeterminate"
+      ></mat-progress-spinner>
+    </button>
+
+    <button mat-button class="w-full" (click)="setState('CHOICE')">Back</button>
+  </div>
+
+  <!-- Wallet State -->
+  <div *ngIf="state() === 'WALLET_CONNECT'" class="space-y-4">
+    <h3 class="font-bold text-center">Connect Wallet</h3>
+    <p class="text-xs text-center text-slate-500 mb-4">
+      Connect your wallet to create an agent or sign in.
+    </p>
+
+    <div class="space-y-2">
+      <button mat-stroked-button class="w-full !h-12 !justify-start !px-4 !rounded-lg">
+        <span>Zelf</span>
+      </button>
+      <button mat-stroked-button class="w-full !h-12 !justify-start !px-4 !rounded-lg">
+        <span>MetaMask</span>
+      </button>
+      <button mat-stroked-button class="w-full !h-12 !justify-start !px-4 !rounded-lg">
+        <span>WalletConnect</span>
+      </button>
+
+      <!-- Fake Agent Wallet Option -->
+      <button
+        mat-stroked-button
+        class="w-full !h-12 !justify-start !px-4 !rounded-lg bg-slate-50 dark:bg-slate-800"
+        (click)="createAgentWallet()"
+      >
+        <span>Create Agent Wallet (x402)</span>
+      </button>
+    </div>
+
+    <button mat-button class="w-full" (click)="setState('CHOICE')">Back</button>
+  </div>
+
+  <div class="mt-8 text-center text-[10px] text-slate-400">Protected by Verifik</div>
+</div>

@@ -1,0 +1,528 @@
+import {
+  Component,
+  inject,
+  signal,
+  ViewEncapsulation,
+  HostListener,
+  ElementRef,
+  ViewChild,
+} from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
+import { environment } from 'environments/environment';
+import { AuthService } from 'app/core/auth/auth.service';
+import { Router } from '@angular/router';
+import { CountryService, CountryDialCode } from 'app/core/services/country.service';
+import { AuthApiService } from 'app/core/services/auth-api.service';
+
+type AuthState =
+  | 'CHOICE'
+  | 'EMAIL_INPUT'
+  | 'PHONE_INPUT'
+  | 'OTP_VERIFY_EMAIL'
+  | 'OTP_VERIFY_PHONE'
+  | 'WALLET_CONNECT';
+
+@Component({
+  selector: 'auth-modal',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatButtonModule,
+    MatIconModule,
+    MatInputModule,
+    MatFormFieldModule,
+    MatDialogModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
+  ],
+  templateUrl: './auth-modal.component.html',
+  encapsulation: ViewEncapsulation.None,
+})
+export class AuthModalComponent {
+  state = signal<AuthState>('CHOICE');
+  isLoading = signal(false);
+
+  // Inputs
+  email = signal('');
+  phone = signal('');
+  otp = signal(''); // Array of 6 chars? Or just string for now.
+  otpArray = signal<string[]>(new Array(6).fill(''));
+
+  // Country selection
+  selectedCountry = signal<CountryDialCode | null>(null);
+  countrySearchTerm = signal('');
+  filteredCountries = signal<CountryDialCode[]>([]);
+  isCountryDropdownOpen = signal(false);
+  dropdownPosition = signal<{ top: string; left: string } | null>(null);
+
+  @ViewChild('countryButton', { static: false }) countryButtonRef?: ElementRef<HTMLButtonElement>;
+
+  // Backend IDs
+  validationId = signal<string | null>(null);
+
+  private _authService = inject(AuthService);
+  private _authApiService = inject(AuthApiService);
+  private _dialogRef = inject(MatDialogRef<AuthModalComponent>);
+  private _router = inject(Router);
+  private _countryService = inject(CountryService);
+
+  projectId = environment.projectId;
+  projectFlowId = environment.loginProjectFlowId;
+
+  get countryDialCodes(): CountryDialCode[] {
+    return this._countryService.countryDialCodes;
+  }
+
+  constructor() {
+    // Set default country to US
+    const defaultCountry = this._countryService.countryDialCodes.find(
+      (c) => c.countryCode === 'us',
+    );
+    if (defaultCountry) {
+      this.selectedCountry.set(defaultCountry);
+    }
+    this.filteredCountries.set(this.countryDialCodes);
+  }
+
+  setState(newState: AuthState) {
+    this.state.set(newState);
+    this.otp.set('');
+    this.otpArray.set(new Array(6).fill(''));
+    this.error.set(null);
+    if (newState === 'PHONE_INPUT') {
+      // Reset to default country when entering phone input
+      const defaultCountry = this._countryService.countryDialCodes.find(
+        (c) => c.countryCode === 'us',
+      );
+      if (defaultCountry) {
+        this.selectedCountry.set(defaultCountry);
+      }
+      this.countrySearchTerm.set('');
+      this.filteredCountries.set(this.countryDialCodes);
+    }
+  }
+
+  error = signal<string | null>(null);
+
+  // --- Email Flow ---
+  startEmailFlow() {
+    this.setState('EMAIL_INPUT');
+  }
+
+  private isValidEmail(email: string): boolean {
+    if (!email || !email.trim()) return false;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email.trim());
+  }
+
+  get isEmailValid(): boolean {
+    return this.isValidEmail(this.email());
+  }
+
+  async sendEmailOtp() {
+    const emailValue = this.email().trim();
+
+    if (!emailValue) {
+      this.error.set('Please enter your email address');
+      return;
+    }
+
+    if (!this.isValidEmail(emailValue)) {
+      this.error.set('Please enter a valid email address');
+      return;
+    }
+
+    this.isLoading.set(true);
+    this.error.set(null);
+
+    this._authApiService
+      .sendEmailOtp({
+        email: emailValue,
+        project: this.projectId,
+        type: 'login',
+        validationMethod: 'verificationCode',
+      })
+      .subscribe({
+        next: (res) => {
+          this.isLoading.set(false);
+          if (res.data?._id) {
+            this.validationId.set(res.data._id);
+            this.setState('OTP_VERIFY_EMAIL');
+          }
+        },
+        error: (err) => {
+          this.isLoading.set(false);
+          this.setState('EMAIL_INPUT');
+          this.error.set(err.error?.message || 'Failed to send OTP');
+        },
+      });
+  }
+
+  async verifyEmailOtp() {
+    const code = this.otpArray().join('');
+
+    if (code.length !== 6 || !this.validationId()) return;
+
+    this.isLoading.set(true);
+    this.error.set(null);
+
+    this._authApiService
+      .validateEmailOtp({
+        otp: code,
+        email: this.email(),
+        projectFlow: this.projectFlowId,
+        project: this.projectId,
+        type: 'login',
+      })
+      .subscribe({
+        next: (res) => {
+          this.isLoading.set(false);
+          this.handleSuccess(res);
+        },
+        error: (err) => {
+          console.error(err);
+          this.isLoading.set(false);
+          this.error.set('Invalid Code');
+        },
+      });
+  }
+
+  // --- Phone Flow ---
+  startPhoneFlow() {
+    this.setState('PHONE_INPUT');
+  }
+
+  private isValidPhone(phone: string): boolean {
+    // Remove all non-digit characters
+    const digitsOnly = phone.replace(/\D/g, '');
+    // Phone should have at least 7 digits and at most 15 digits (E.164 standard)
+    return digitsOnly.length >= 7 && digitsOnly.length <= 15;
+  }
+
+  onPhoneInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    let value = input.value;
+
+    // Only allow digits, spaces, dashes, and parentheses
+    value = value.replace(/[^\d\s\-()]/g, '');
+
+    this.phone.set(value);
+  }
+
+  onCountrySearchChange(searchTerm: string) {
+    this.countrySearchTerm.set(searchTerm);
+    const term = searchTerm.toLowerCase().trim();
+
+    if (!term) {
+      this.filteredCountries.set(this.countryDialCodes);
+      return;
+    }
+
+    const filtered = this.countryDialCodes.filter(
+      (country) =>
+        country.name.toLowerCase().includes(term) ||
+        country.dialCode.includes(term) ||
+        country.countryCode.toLowerCase().includes(term),
+    );
+    this.filteredCountries.set(filtered);
+  }
+
+  toggleCountryDropdown() {
+    const isOpening = !this.isCountryDropdownOpen();
+    this.isCountryDropdownOpen.set(isOpening);
+
+    if (isOpening && this.countryButtonRef) {
+      // Calculate position for fixed dropdown (fixed positioning is relative to viewport)
+      const button = this.countryButtonRef.nativeElement;
+      const rect = button.getBoundingClientRect();
+      this.dropdownPosition.set({
+        top: `${rect.bottom + 4}px`, // Fixed positioning doesn't need scrollY
+        left: `${rect.left}px`, // Fixed positioning doesn't need scrollX
+      });
+    } else {
+      this.dropdownPosition.set(null);
+    }
+  }
+
+  selectCountry(country: CountryDialCode) {
+    this.selectedCountry.set(country);
+    this.countrySearchTerm.set('');
+    this.filteredCountries.set(this.countryDialCodes);
+    this.isCountryDropdownOpen.set(false);
+    this.dropdownPosition.set(null);
+  }
+
+  async sendPhoneOtp() {
+    const phoneValue = this.phone().trim();
+    const country = this.selectedCountry();
+
+    if (!phoneValue) {
+      this.error.set('Please enter your phone number');
+      return;
+    }
+
+    if (!country) {
+      this.error.set('Please select a country');
+      return;
+    }
+
+    // Validate phone number
+    const phoneDigits = phoneValue.replace(/\D/g, '');
+    if (!this.isValidPhone(phoneDigits)) {
+      this.error.set('Please enter a valid phone number');
+      return;
+    }
+
+    this.isLoading.set(true);
+    this.error.set(null);
+
+    // Format phone number: remove country code if it's already included
+    let finalPhone = phoneDigits;
+    const dialCodeDigits = country.dialCode.replace('+', '');
+
+    // If phone starts with country code, remove it (we'll add it back)
+    if (phoneDigits.startsWith(dialCodeDigits)) {
+      finalPhone = phoneDigits.substring(dialCodeDigits.length);
+    }
+
+    this._authApiService
+      .sendPhoneOtp({
+        phone: finalPhone,
+        country: country.countryCode.toUpperCase(),
+        project: this.projectId,
+        type: 'login',
+        validationMethod: 'verificationCode',
+      })
+      .subscribe({
+        next: (res) => {
+          this.isLoading.set(false);
+          if (res.data?._id) {
+            this.validationId.set(res.data._id);
+            this.setState('OTP_VERIFY_PHONE');
+          }
+        },
+        error: (err) => {
+          this.isLoading.set(false);
+          this.setState('PHONE_INPUT');
+          this.error.set(err.error?.message || 'Failed to send OTP');
+        },
+      });
+  }
+
+  async verifyPhoneOtp() {
+    const code = this.otpArray().join('');
+    if (code.length !== 6 || !this.validationId()) return;
+
+    this.isLoading.set(true);
+    this.error.set(null);
+
+    this._authApiService
+      .validatePhoneOtp({
+        code: code,
+        phoneValidation: this.validationId()!,
+        project: this.projectId,
+        type: 'login',
+      })
+      .subscribe({
+        next: (res) => {
+          this.isLoading.set(false);
+          this.handleSuccess(res);
+        },
+        error: (err) => {
+          this.isLoading.set(false);
+          this.error.set('Invalid Code');
+        },
+      });
+  }
+
+  // --- Wallet Flow ---
+  startWalletFlow() {
+    this.setState('WALLET_CONNECT');
+  }
+
+  createAgentWallet() {
+    // Lazy load ethers to avoid large bundle payload if not used?
+    // User has it in dependencies.
+    import('ethers').then(({ ethers }) => {
+      const wallet = ethers.Wallet.createRandom();
+      console.log('Created Wallet:', wallet.address, wallet.privateKey);
+
+      // For now, let's just alert or log it. Ideally show a nice UI.
+      // Storing in localStorage for demo
+      localStorage.setItem('x402_agent_pk', wallet.privateKey);
+      localStorage.setItem('x402_agent_address', wallet.address);
+
+      alert(
+        `Created Agent Wallet! \nAddress: ${wallet.address}\nPrivate Key saved to local storage.`,
+      );
+
+      // TODO: Authenticate with this wallet
+    });
+  }
+
+  // --- Helpers ---
+
+  handleSuccess(res: any) {
+    const data = res.data || res;
+    // This is the temporary token from the validation endpoint
+    const tempToken = data.token || data.accessToken;
+
+    if (tempToken) {
+      // 1. Set the temporary token so the interceptor uses it for the next call
+      this._authService.accessToken = tempToken;
+
+      // 2. Call project-login to get the real access token
+      this._authApiService.projectLogin().subscribe({
+        next: (loginRes: any) => {
+          const realToken = loginRes.data?.accessToken || loginRes.accessToken; // check logic
+          // Structure seems to be: { accessToken: "...", tokenType: "bearer", ... } based on module
+
+          if (realToken) {
+            // 3. Set the real token
+            this._authService.accessToken = realToken;
+            localStorage.setItem('accessToken', realToken);
+
+            // 4. Get the session data
+            this._authApiService.getSession().subscribe({
+              next: (sessionRes: any) => {
+                const userData = sessionRes.data?.user || sessionRes.user || sessionRes;
+                // Store account data
+                localStorage.setItem('verifik_account', JSON.stringify(userData));
+
+                this._dialogRef.close(true);
+                location.reload();
+              },
+              error: (err) => {
+                console.error('Session fetch failed', err);
+                this.error.set('Failed to fetch session');
+                this.isLoading.set(false);
+              },
+            });
+          } else {
+            this.error.set('Failed to obtain access token');
+            this.isLoading.set(false);
+          }
+        },
+        error: (err) => {
+          console.error('Project login failed', err);
+          this.error.set('Login failed');
+          this.isLoading.set(false);
+        },
+      });
+    } else {
+      console.warn('No temp token found in response', res);
+      this._dialogRef.close(true);
+    }
+  }
+
+  onOtpInput(event: any, index: number) {
+    const input = event.target as HTMLInputElement;
+    let value = input.value;
+
+    // Remove any non-digit characters
+    value = value.replace(/\D/g, '');
+
+    // Handle paste - if multiple digits, distribute them across inputs starting from current index
+    if (value.length > 1) {
+      const currentOtp = [...this.otpArray()];
+      const digits = value.split('').slice(0, 6 - index); // Only take digits that fit
+
+      // Fill from current index onwards
+      for (let i = 0; i < digits.length && index + i < 6; i++) {
+        currentOtp[index + i] = digits[i];
+        // Update each input element's value
+        const inputElement = document.getElementById(`otp-${index + i}`) as HTMLInputElement;
+        if (inputElement) {
+          inputElement.value = digits[i];
+        }
+      }
+
+      this.otpArray.set(currentOtp);
+
+      // Clear the current input
+      input.value = currentOtp[index] || '';
+
+      // Focus the input after the last filled digit
+      const nextIndex = Math.min(index + digits.length, 5);
+      setTimeout(() => {
+        const nextInput = document.getElementById(`otp-${nextIndex}`) as HTMLInputElement;
+        if (nextInput) {
+          nextInput.focus();
+          nextInput.select();
+        }
+      }, 0);
+
+      // Auto submit if all 6 digits are filled
+      if (currentOtp.every((v) => v !== '') && currentOtp.length === 6) {
+        setTimeout(() => {
+          if (this.state() === 'OTP_VERIFY_EMAIL') this.verifyEmailOtp();
+          if (this.state() === 'OTP_VERIFY_PHONE') this.verifyPhoneOtp();
+        }, 100);
+      }
+      return;
+    }
+
+    // Handle single character input
+    const currentOtp = [...this.otpArray()];
+
+    if (value.length > 0) {
+      // Take only the last digit entered
+      const digit = value.slice(-1);
+      currentOtp[index] = digit;
+      this.otpArray.set(currentOtp);
+
+      // Clear and set the input value to just the single digit
+      input.value = digit;
+
+      // Move to next input if not the last one
+      if (index < 5) {
+        setTimeout(() => {
+          const nextInput = document.getElementById(`otp-${index + 1}`) as HTMLInputElement;
+          if (nextInput) {
+            nextInput.focus();
+            nextInput.select();
+          }
+        }, 0);
+      }
+
+      // Auto submit if all 6 digits are filled
+      if (currentOtp.every((v) => v !== '') && currentOtp.length === 6) {
+        setTimeout(() => {
+          if (this.state() === 'OTP_VERIFY_EMAIL') this.verifyEmailOtp();
+          if (this.state() === 'OTP_VERIFY_PHONE') this.verifyPhoneOtp();
+        }, 100);
+      }
+    } else {
+      // Handle deletion - clear current input
+      currentOtp[index] = '';
+      this.otpArray.set(currentOtp);
+      input.value = '';
+    }
+  }
+
+  onKeyDown(event: KeyboardEvent, index: number) {
+    if (event.key === 'Backspace' && !this.otpArray()[index] && index > 0) {
+      const prevInput = document.getElementById(`otp-${index - 1}`);
+      prevInput?.focus();
+    }
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    // Close dropdown if clicking outside the country selector
+    if (this.isCountryDropdownOpen() && !target.closest('.country-selector-container')) {
+      this.isCountryDropdownOpen.set(false);
+      this.dropdownPosition.set(null);
+    }
+  }
+}

@@ -1,5 +1,6 @@
-import { Component, computed, EventEmitter, inject, Input, Output } from '@angular/core';
+import { Component, computed, EventEmitter, inject, Input, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -9,7 +10,7 @@ import { ApiEndpoint } from '../postman.types';
 @Component({
   selector: 'postman-sidebar',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule, MatTooltipModule],
+  imports: [CommonModule, FormsModule, MatButtonModule, MatIconModule, MatTooltipModule],
   template: `
     <div
       class="flex flex-col w-full h-full bg-slate-50 border-r dark:bg-slate-900 dark:border-slate-800 transition-all duration-300"
@@ -24,6 +25,24 @@ import { ApiEndpoint } from '../postman.types';
           <mat-icon>{{ collapsed ? 'menu' : 'chevron_left' }}</mat-icon>
         </button>
       </div>
+
+      <!-- Search Input -->
+      <div class="px-3 py-2" *ngIf="!collapsed">
+        <div class="relative">
+          <mat-icon
+            class="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 !w-4 !h-4 !text-[16px] leading-none flex items-center justify-center"
+            >search</mat-icon
+          >
+          <input
+            type="text"
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event)"
+            placeholder="Search collections..."
+            class="w-full pl-8 pr-3 py-1.5 text-xs rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+          />
+        </div>
+      </div>
+
       <div class="flex-1 overflow-y-auto p-2 space-y-2">
         <div *ngFor="let category of categories()">
           <div
@@ -57,9 +76,20 @@ import { ApiEndpoint } from '../postman.types';
               >
                 {{ collapsed ? endpoint.method.substring(0, 1) : endpoint.method }}
               </span>
-              <span *ngIf="!collapsed" class="truncate">{{ endpoint.label }}</span>
+              <span *ngIf="!collapsed" class="truncate">
+                <!-- Highlight search match logic could go here, but strictly not required yet -->
+                {{ endpoint.label }}
+              </span>
             </button>
           </div>
+        </div>
+
+        <!-- Empty State -->
+        <div
+          *ngIf="categories().length === 0 && searchQuery()"
+          class="p-4 text-center text-slate-500 text-sm"
+        >
+          No collections found for "{{ searchQuery() }}"
         </div>
       </div>
     </div>
@@ -71,22 +101,40 @@ export class SidebarComponent {
 
   private _postmanService = inject(PostmanService);
 
+  searchQuery = signal('');
   selectedEndpoint = this._postmanService.selectedEndpoint;
 
   categories = computed(() => {
     const endpoints = this._postmanService.endpoints();
+    const query = this.searchQuery().toLowerCase().trim();
+
+    // First, filter endpoints if query exists
+    let filteredEndpoints = endpoints;
+    if (query) {
+      filteredEndpoints = endpoints.filter((ep) => {
+        return (
+          ep.label.toLowerCase().includes(query) ||
+          ep.url.toLowerCase().includes(query) ||
+          (ep.description && ep.description.toLowerCase().includes(query)) ||
+          (ep.category && ep.category.toLowerCase().includes(query))
+        );
+      });
+    }
+
     const groups: { [key: string]: ApiEndpoint[] } = {};
 
-    endpoints.forEach((ep) => {
+    filteredEndpoints.forEach((ep) => {
       const cat = ep.category || 'Other';
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(ep);
     });
 
-    return Object.keys(groups).map((key) => ({
-      name: key,
-      endpoints: groups[key],
-    }));
+    return Object.keys(groups)
+      .sort()
+      .map((key) => ({
+        name: key,
+        endpoints: groups[key],
+      }));
   });
 
   select(endpoint: ApiEndpoint) {
