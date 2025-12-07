@@ -1,0 +1,181 @@
+
+.content-section {
+    min-height: 100vh;
+    padding: 8rem 8vw;
+    background: rgba(0,0,0,0.8);
+    background: linear-gradient(to bottom, transparent, #050505 20%, #050505);
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    pointer-events: auto;
+}
+
+.section-header {
+    margin-bottom: 5rem;
+}
+
+.section-label {
+    color: #4ade80;
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 1rem;
+}
+
+.content-section h2 {
+    font-size: 3.5rem;
+    line-height: 1.1;
+    font-weight: 700;
+    color: #fff;
+}
+
+/* Feature Grid Wrapper for 2-column layout */
+.feature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    width: 100%;
+}
+
+/* Feature Highlight (Card Style) */
+.feature-highlight {
+    background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px;
+    padding: 3rem;
+    /* Removed margin-bottom here as gap handles it in grid, but keeping for mobile fallback if grid collapses */
+    /* margin-bottom: 3rem; */ 
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    height: 100%; /* Fill grid cell */
+}
+
+@media (max-width: 1024px) {
+    .feature-grid {
+        grid-template-columns: 1fr; /* Stack on smaller screens */
+        gap: 2rem;
+    }
+}
+
+.feature-content {
+    max-width: 600px;
+    margin-bottom: 2.5rem;
+    position: relative;
+    z-index: 2;
+}
+
+.feature-content h3 {
+    font-size: 2rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #fff;
+}
+
+.feature-content p {
+    font-size: 1.1rem;
+    color: #a1a1aa;
+    line-height: 1.6;
+}
+
+.icon-box-large {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 1.5rem;
+    color: #4ade80;
+}
+
+.icon-box-large svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Marquee / Wall of Data */
+.marquee-container {
+    width: 100%;
+    position: relative;
+    display: flex;
+    overflow: hidden;
+    mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+    margin-bottom: 1rem;
+    padding: 0.5rem 0;
+}
+
+.marquee-track {
+    display: flex;
+    gap: 1.5rem;
+    min-width: 100%;
+    animation: scroll 40s linear infinite;
+}
+
+.marquee-track.reverse {
+    animation-direction: reverse;
+}
+
+.marquee-track.slow {
+    animation-duration: 60s;
+}
+
+@keyframes scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); } 
+}
+
+.country-card {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 0.8rem 1.2rem;
+    border-radius: 8px;
+    min-width: fit-content;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+}
+
+.country-card:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: #4ade80;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(74, 222, 128, 0.1);
+}
+
+.country-card span {
+    font-weight: 500;
+    color: #fff;
+    font-size: 0.95rem;
+}
+
+.secondary-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 0.8rem 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-top: 1.5rem;
+    border-radius: 99px;
+    cursor: pointer;
+    transition: all 0.3s;
+    letter-spacing: 0.5px;
+    pointer-events: auto;
+}
+
+.secondary-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+@media (max-width: 768px) {
+  .content-section h2 { font-size: 2.5rem; }
+  .feature-highlight { padding: 1.5rem; }
+}
