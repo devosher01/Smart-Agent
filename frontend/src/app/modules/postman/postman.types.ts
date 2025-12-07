@@ -11,6 +11,7 @@ export interface ApiEndpoint {
   params?: { key: string; value: string; type: string; required: boolean; description?: string }[];
   body?: any;
   category?: string;
+  country?: string;
   documentationUrl?: string; // URL to the markdown file
 }
 
@@ -19,6 +20,7 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
     id: 'auth-email',
     label: 'API Key Access via Email',
     category: 'AUTHENTICATION',
+    country: 'world',
     method: 'POST',
     url: `${environment.apiUrl}/v2/projects/email-login`,
     headers: [{ key: 'Accept', value: 'application/json' }],
@@ -36,6 +38,7 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
     id: 'biometrics-liveness',
     label: 'Liveness Detection',
     category: "BIOMETRICS API'S",
+    country: 'world',
     method: 'POST',
     url: `${environment.apiUrl}/v2/face-recognition/liveness`,
     headers: [
@@ -53,6 +56,7 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
     label: 'Colombian Citizen',
     code: 'colombia_api_identity_lookup',
     category: 'IDENTITY VALIDATION',
+    country: 'Colombia',
     method: 'GET',
     url: `${environment.apiUrl}/v2/co/cedula`,
     headers: [

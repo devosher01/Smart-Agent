@@ -1,4 +1,4 @@
-import { Component, effect, HostListener, inject } from '@angular/core';
+import { Component, computed, effect, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -38,8 +38,24 @@ import { PostmanService } from './postman.service';
         <div
           class="h-12 border-b dark:border-slate-800 flex items-center justify-between px-4 bg-slate-50 dark:bg-slate-950"
         >
-          <div class="font-medium text-slate-700 dark:text-slate-200">
-            <!-- Breadcrumb or Context could go here -->
+          <!-- Country Filters -->
+          <div
+            class="flex items-center gap-1 overflow-x-auto scrollbar-hide mask-gradient max-w-[60%]"
+          >
+            <button
+              *ngFor="let country of countries()"
+              (click)="toggleCountry(country.name)"
+              [class.bg-slate-200]="selectedCountry() === country.name"
+              [class.dark:bg-slate-800]="selectedCountry() === country.name"
+              class="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex-shrink-0 relative group"
+              [matTooltip]="country.name + ' (' + country.count + ')'"
+            >
+              <span
+                class="text-xl leading-none grayscale hover:grayscale-0 transition-all"
+                [class.grayscale-0]="selectedCountry() === country.name"
+                >{{ getCountryFlag(country.name) }}</span
+              >
+            </button>
           </div>
 
           <!-- Layout Toggles -->
@@ -98,7 +114,7 @@ import { PostmanService } from './postman.service';
             [class.w-full]="layout === 'vertical'"
             [class.cursor-col-resize]="layout === 'horizontal'"
             [class.cursor-row-resize]="layout === 'vertical'"
-            (mousedown)="startDrag()"
+            (mousedown)="startDrag($event, layout === 'horizontal' ? 'horizontal' : 'vertical')"
           ></div>
 
           <!-- Response Viewer Panel -->
@@ -106,7 +122,6 @@ import { PostmanService } from './postman.service';
             class="flex-1 min-w-0 overflow-hidden border-l dark:border-slate-800"
             [class.border-l]="layout === 'horizontal'"
             [class.border-t]="layout === 'vertical'"
-            [class.border-l-0]="layout === 'vertical'"
           >
             <postman-response-viewer></postman-response-viewer>
           </div>
@@ -121,7 +136,7 @@ export class PostmanComponent {
   private _router = inject(Router);
 
   sidebarCollapsed = false;
-  sidebarWidth = 256; // w-64
+  sidebarWidth = 280; // Expanded width
 
   // Layout State
   layout: 'horizontal' | 'vertical' = 'horizontal';
@@ -129,9 +144,59 @@ export class PostmanComponent {
   // Resizable Split (Size in Percentage)
   requestPanelSize = 50;
   isDragging = false;
+  dragMode: 'horizontal' | 'vertical' | null = null;
 
   // Flag to prevent cyclic updates
   private _isNavigating = false;
+
+  selectedCountry = this._postmanService.selectedCountry;
+
+  countries = computed(() => {
+    const endpoints = this._postmanService.endpoints();
+    const counts: Record<string, number> = {};
+
+    endpoints.forEach((ep) => {
+      if (ep.country) {
+        counts[ep.country] = (counts[ep.country] || 0) + 1;
+      }
+    });
+
+    return Object.entries(counts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  });
+
+  toggleCountry(country: string) {
+    this.selectedCountry.update((c) => (c === country ? null : country));
+  }
+
+  getCountryFlag(country: string): string {
+    const map: Record<string, string> = {
+      Colombia: '🇨🇴',
+      'United States': '🇺🇸',
+      Peru: '🇵🇪',
+      world: '🌐',
+      Mexico: '🇲🇽',
+      Brazil: '🇧🇷',
+      Chile: '🇨🇱',
+      Argentina: '🇦🇷',
+      Ecuador: '🇪🇨',
+      Venezuela: '🇻🇪',
+      Bolivia: '🇧🇴',
+      Uruguay: '🇺🇾',
+      Paraguay: '🇵🇾',
+      Panama: '🇵🇦',
+      'Costa Rica': '🇨🇷',
+      Guatemala: '🇬🇹',
+      Honduras: '🇭🇳',
+      'El Salvador': '🇸🇻',
+      'Dominican Republic': '🇩🇴',
+      'República Dominicana': '🇩🇴',
+      Canada: '🇨🇦',
+      Spain: '🇪🇸',
+    };
+    return map[country] || '🏳️';
+  }
 
   constructor() {
     // Effect: Sync URL -> Selected Endpoint (Initial Load / Refresh)
@@ -192,31 +257,36 @@ export class PostmanComponent {
     this.layout = mode;
   }
 
-  startDrag() {
+  startDrag(event: MouseEvent, mode: 'horizontal' | 'vertical') {
+    event.preventDefault();
     this.isDragging = true;
+    this.dragMode = mode;
   }
 
   stopDrag() {
     this.isDragging = false;
+    this.dragMode = null;
   }
 
   onDrag(event: MouseEvent) {
     if (!this.isDragging) return;
 
+    // Use dragMode or fallback to layout
+    const mode = this.dragMode || this.layout;
+
+    // We need the container dimensions.
+    // The event is on the container (mousemove), so currentTarget is the container.
+    const container = event.currentTarget as HTMLElement;
+    const rect = container.getBoundingClientRect();
+
     let newSizePercent = 50;
 
-    if (this.layout === 'horizontal') {
-      const containerWidth = window.innerWidth - this.sidebarWidth;
-      const newWidthPx = event.clientX - this.sidebarWidth;
-      newSizePercent = (newWidthPx / containerWidth) * 100;
+    if (mode === 'horizontal') {
+      const offsetX = event.clientX - rect.left;
+      newSizePercent = (offsetX / rect.width) * 100;
     } else {
-      // Vertical Layout logic
-      // We assume the container starts below the header (approx 48px/3rem)
-      // If the header height changes, this offset needs adjustment.
-      const headerOffset = 48; // h-12
-      const containerHeight = window.innerHeight - headerOffset;
-      const newHeightPx = event.clientY - headerOffset;
-      newSizePercent = (newHeightPx / containerHeight) * 100;
+      const offsetY = event.clientY - rect.top;
+      newSizePercent = (offsetY / rect.height) * 100;
     }
 
     // Clamp

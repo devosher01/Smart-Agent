@@ -13,6 +13,7 @@ export class PostmanService {
 
   // Signals for state management
   selectedEndpoint = signal<ApiEndpoint | null>(null);
+  selectedCountry = signal<string | null>(null);
   response = signal<any>(null);
   responseTime = signal<number | null>(null);
   isLoading = signal<boolean>(false);
@@ -37,6 +38,7 @@ export class PostmanService {
               label: feature.name,
               code: feature.code, // Map the code
               category: this._mapCategory(feature.baseCategory || feature.group),
+              country: feature.country,
               method: 'POST',
               // Use the feature's URL if absolute, else prepend apiUrl
               url: feature.url
