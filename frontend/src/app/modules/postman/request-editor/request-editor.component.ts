@@ -75,11 +75,13 @@ import { TranslocoPipe } from '@jsverse/transloco';
         <mat-tab-group class="h-full">
           <!-- About -->
           <mat-tab label="About" *ngIf="documentationContent()">
-            <div class="p-6 overflow-y-auto h-full bg-slate-50 dark:bg-slate-900/50">
-              <div
-                class="prose prose-sm dark:prose-invert max-w-none prose-headings:font-bold prose-a:text-blue-600 prose-img:rounded-xl select-text"
-                [innerHTML]="renderMarkdown(documentationContent() || '')"
-              ></div>
+            <div class="flex flex-col h-full overflow-hidden">
+              <div class="flex-1 overflow-y-auto p-6 bg-slate-50 dark:bg-slate-900/50">
+                <div
+                  class="prose prose-sm dark:prose-invert max-w-none prose-headings:font-bold prose-a:text-blue-600 prose-img:rounded-xl select-text"
+                  [innerHTML]="renderMarkdown(documentationContent() || '')"
+                ></div>
+              </div>
             </div>
           </mat-tab>
 
@@ -100,17 +102,17 @@ import { TranslocoPipe } from '@jsverse/transloco';
                 class="flex gap-2 items-start"
               >
                 <input
-                  class="flex-1 min-w-0 px-2 py-1 border rounded dark:bg-slate-800 dark:border-slate-700"
+                  class="flex-1 min-w-0 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                   [(ngModel)]="param.key"
                   placeholder="Key"
                 />
                 <input
-                  class="flex-1 min-w-0 px-2 py-1 border rounded dark:bg-slate-800 dark:border-slate-700"
+                  class="flex-1 min-w-0 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                   [(ngModel)]="param.value"
                   placeholder="Value"
                 />
                 <input
-                  class="flex-1 min-w-0 px-2 py-1 border rounded dark:bg-slate-800 dark:border-slate-700 placeholder:text-slate-400"
+                  class="flex-1 min-w-0 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-sm placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                   [(ngModel)]="param.description"
                   placeholder="Description"
                 />
@@ -123,7 +125,11 @@ import { TranslocoPipe } from '@jsverse/transloco';
                 </button>
               </div>
               <div class="pt-4">
-                <button mat-stroked-button (click)="addParam()" class="text-sm">
+                <button
+                  mat-stroked-button
+                  (click)="addParam()"
+                  class="!rounded-lg !border-slate-200 text-slate-600"
+                >
                   <mat-icon class="icon-size-4 mr-1">add</mat-icon> Add Param
                 </button>
               </div>
@@ -134,10 +140,10 @@ import { TranslocoPipe } from '@jsverse/transloco';
           <mat-tab label="Headers">
             <div class="p-4 overflow-y-auto h-full space-y-4">
               <div
-                class="flex items-center gap-2 mb-2 font-semibold text-xs uppercase text-slate-500"
+                class="flex items-center gap-2 mb-2 font-semibold text-xs uppercase text-slate-500 tracking-wider"
               >
-                <div class="flex-1">Key</div>
-                <div class="flex-1">Value</div>
+                <div class="flex-1 pl-1">Key</div>
+                <div class="flex-1 pl-1">Value</div>
                 <div class="w-8"></div>
                 <!-- Spacer for delete button -->
               </div>
@@ -146,12 +152,12 @@ import { TranslocoPipe } from '@jsverse/transloco';
                 class="flex gap-2 items-center"
               >
                 <input
-                  class="flex-1 min-w-0 px-2 py-1 border rounded dark:bg-slate-800 dark:border-slate-700"
+                  class="flex-1 min-w-0 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                   [(ngModel)]="header.key"
                   placeholder="Key"
                 />
                 <input
-                  class="flex-1 min-w-0 px-2 py-1 border rounded dark:bg-slate-800 dark:border-slate-700"
+                  class="flex-1 min-w-0 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg dark:bg-slate-800 dark:border-slate-700 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                   [(ngModel)]="header.value"
                   placeholder="Value"
                 />
@@ -164,7 +170,11 @@ import { TranslocoPipe } from '@jsverse/transloco';
                 </button>
               </div>
               <div class="pt-4">
-                <button mat-stroked-button (click)="addHeader()" class="text-sm">
+                <button
+                  mat-stroked-button
+                  (click)="addHeader()"
+                  class="!rounded-lg !border-slate-200 text-slate-600"
+                >
                   <mat-icon class="icon-size-4 mr-1">add</mat-icon> Add Header
                 </button>
               </div>
@@ -174,9 +184,11 @@ import { TranslocoPipe } from '@jsverse/transloco';
           <!-- Body -->
           <mat-tab label="Body" *ngIf="endpoint()?.method !== 'GET'">
             <div class="p-4 h-full flex flex-col">
-              <div class="text-xs text-slate-500 mb-2">JSON Body</div>
+              <div class="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wider">
+                JSON Body
+              </div>
               <textarea
-                class="flex-1 w-full p-3 font-mono text-sm border rounded dark:bg-slate-800 dark:border-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="flex-1 w-full p-4 font-mono text-sm bg-slate-50 border border-slate-200 rounded-xl dark:bg-slate-800 dark:border-slate-700 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                 [ngModel]="bodyString"
                 (ngModelChange)="updateBody($event)"
               ></textarea>
@@ -193,6 +205,26 @@ import { TranslocoPipe } from '@jsverse/transloco';
       </div>
     </ng-template>
   `,
+  styles: [
+    `
+      ::ng-deep .mat-mdc-tab-group {
+        height: 100%;
+      }
+      ::ng-deep .mat-mdc-tab-body-wrapper {
+        height: 100%;
+        overflow-y: auto;
+      }
+      ::ng-deep .mat-mdc-tab-body {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+      ::ng-deep .mat-mdc-tab-body-content {
+        height: 100%;
+        overflow: hidden;
+      }
+    `,
+  ],
 })
 export class RequestEditorComponent {
   private _postmanService = inject(PostmanService);

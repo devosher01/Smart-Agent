@@ -22,10 +22,12 @@ import { PostmanService } from './postman.service';
     MatTooltipModule,
   ],
   template: `
-    <div class="flex h-screen w-full overflow-hidden bg-white dark:bg-slate-900 select-none">
+    <div
+      class="flex h-screen w-full overflow-hidden bg-[#f8fafc] dark:bg-[#0f172a] select-none text-slate-900 dark:text-slate-100 font-sans"
+    >
       <!-- Sidebar -->
       <div
-        class="flex-shrink-0 transition-all duration-300 ease-in-out h-full border-r dark:border-slate-800"
+        class="flex-shrink-0 transition-all duration-300 ease-in-out h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-20"
         [style.width.px]="sidebarWidth"
       >
         <postman-sidebar [collapsed]="sidebarCollapsed" (toggleCollapsed)="toggleSidebar()">
@@ -33,61 +35,64 @@ import { PostmanService } from './postman.service';
       </div>
 
       <!-- Main Content Wrapper -->
-      <div class="flex-1 flex flex-col h-full min-w-0">
-        <!-- Toolbar / Header (Optional place for global context or just the layout toggles) -->
-        <div
-          class="h-12 border-b dark:border-slate-800 flex items-center justify-between px-4 bg-slate-50 dark:bg-slate-950"
-        >
-          <!-- Country Filters -->
+      <div class="flex-1 flex flex-col h-full min-w-0 bg-[#f8fafc] dark:bg-[#0f172a]">
+        <!-- Toolbar / Header -->
+        <div class="h-16 flex items-center justify-between px-6 py-3 bg-transparent z-10">
+          <!-- Country Filters (Pill Style) -->
           <div
-            class="flex items-center gap-1 overflow-x-auto scrollbar-hide mask-gradient max-w-[60%]"
+            class="flex items-center gap-1.5 overflow-x-auto scrollbar-hide mask-gradient max-w-[60%] p-1"
           >
             <button
               *ngFor="let country of countries()"
               (click)="toggleCountry(country.name)"
-              [class.bg-slate-200]="selectedCountry() === country.name"
-              [class.dark:bg-slate-800]="selectedCountry() === country.name"
-              class="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex-shrink-0 relative group"
+              [class.bg-white]="selectedCountry() !== country.name"
+              [class.shadow-sm]="selectedCountry() !== country.name"
+              [class.border-slate-200]="selectedCountry() !== country.name"
+              [class.bg-slate-900]="selectedCountry() === country.name"
+              [class.text-white]="selectedCountry() === country.name"
+              [class.border-transparent]="selectedCountry() === country.name"
+              class="h-9 w-9 min-w-[2.25rem] flex items-center justify-center rounded-full border transition-all duration-200 relative group text-lg flex-shrink-0 aspect-square"
               [matTooltip]="country.name + ' (' + country.count + ')'"
             >
-              <span
-                class="text-xl leading-none grayscale hover:grayscale-0 transition-all"
-                [class.grayscale-0]="selectedCountry() === country.name"
-                >{{ getCountryFlag(country.name) }}</span
-              >
+              <span class="leading-none">{{ getCountryFlag(country.name) }}</span>
             </button>
           </div>
 
-          <!-- Layout Toggles -->
-          <div class="flex items-center gap-1 bg-slate-200 dark:bg-slate-800 rounded p-1">
+          <!-- Layout Toggles (Joined Segmented Control) -->
+          <div
+            class="flex items-center bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-0.5 shadow-sm"
+          >
             <button
-              class="p-1 rounded hover:bg-white dark:hover:bg-slate-700 transition-colors"
-              [class.bg-white]="layout === 'horizontal'"
-              [class.text-blue-600]="layout === 'horizontal'"
-              [class.shadow-sm]="layout === 'horizontal'"
+              class="p-1.5 px-3 rounded-md transition-all text-slate-500 hover:text-slate-900"
+              [class.bg-slate-100]="layout === 'horizontal'"
+              [class.text-slate-900]="layout === 'horizontal'"
+              [class.font-medium]="layout === 'horizontal'"
               [class.dark:bg-slate-700]="layout === 'horizontal'"
+              [class.dark:text-white]="layout === 'horizontal'"
               (click)="setLayout('horizontal')"
-              matTooltip="Side by Side"
+              matTooltip="Split Vertical"
             >
-              <mat-icon class="text-sm scale-75">view_column</mat-icon>
+              <mat-icon class="!w-4 !h-4 !text-[16px]">view_column</mat-icon>
             </button>
+            <div class="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1"></div>
             <button
-              class="p-1 rounded hover:bg-white dark:hover:bg-slate-700 transition-colors"
-              [class.bg-white]="layout === 'vertical'"
-              [class.text-blue-600]="layout === 'vertical'"
-              [class.shadow-sm]="layout === 'vertical'"
+              class="p-1.5 px-3 rounded-md transition-all text-slate-500 hover:text-slate-900"
+              [class.bg-slate-100]="layout === 'vertical'"
+              [class.text-slate-900]="layout === 'vertical'"
+              [class.font-medium]="layout === 'vertical'"
               [class.dark:bg-slate-700]="layout === 'vertical'"
+              [class.dark:text-white]="layout === 'vertical'"
               (click)="setLayout('vertical')"
-              matTooltip="Top and Bottom"
+              matTooltip="Split Horizontal"
             >
-              <mat-icon class="text-sm scale-75">view_stream</mat-icon>
+              <mat-icon class="!w-4 !h-4 !text-[16px]">view_stream</mat-icon>
             </button>
           </div>
         </div>
 
         <!-- Split Content Area -->
         <div
-          class="flex-1 flex min-w-0"
+          class="flex-1 flex min-w-0 min-h-0 p-4 pt-0 gap-4"
           [class.flex-row]="layout === 'horizontal'"
           [class.flex-col]="layout === 'vertical'"
           (mousemove)="onDrag($event)"
@@ -100,28 +105,34 @@ import { PostmanService } from './postman.service';
             [class.w-full]="layout === 'vertical'"
             [style.width.%]="layout === 'horizontal' ? requestPanelSize : 100"
             [style.height.%]="layout === 'vertical' ? requestPanelSize : 100"
-            class="min-w-0 relative overflow-hidden"
+            class="min-w-0 min-h-0 relative overflow-hidden flex flex-col bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm"
           >
             <postman-request-editor></postman-request-editor>
           </div>
 
           <!-- Resizer Handle -->
           <div
-            class="hover:bg-blue-500 active:bg-blue-600 transition-colors bg-slate-200 dark:bg-slate-700 z-10 flex-shrink-0"
-            [class.w-1]="layout === 'horizontal'"
-            [class.h-1]="layout === 'vertical'"
+            class="hover:bg-blue-500/20 active:bg-blue-500/40 transition-colors rounded-full flex-shrink-0 z-10 flex items-center justify-center"
+            [class.w-4]="layout === 'horizontal'"
+            [class.h-4]="layout === 'vertical'"
             [class.h-full]="layout === 'horizontal'"
             [class.w-full]="layout === 'vertical'"
             [class.cursor-col-resize]="layout === 'horizontal'"
             [class.cursor-row-resize]="layout === 'vertical'"
             (mousedown)="startDrag($event, layout === 'horizontal' ? 'horizontal' : 'vertical')"
-          ></div>
+          >
+            <div
+              class="bg-slate-300 dark:bg-slate-700 rounded-full"
+              [class.w-1]="layout === 'horizontal'"
+              [class.h-8]="layout === 'horizontal'"
+              [class.h-1]="layout === 'vertical'"
+              [class.w-8]="layout === 'vertical'"
+            ></div>
+          </div>
 
           <!-- Response Viewer Panel -->
           <div
-            class="flex-1 min-w-0 overflow-hidden border-l dark:border-slate-800"
-            [class.border-l]="layout === 'horizontal'"
-            [class.border-t]="layout === 'vertical'"
+            class="flex-1 min-w-0 min-h-0 overflow-hidden flex flex-col bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm"
           >
             <postman-response-viewer></postman-response-viewer>
           </div>

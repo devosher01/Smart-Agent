@@ -11,24 +11,24 @@ import { JsonTableComponent } from './json-table.component';
   imports: [CommonModule, JsonTableComponent, MatButtonModule, MatIconModule],
   host: { class: 'block h-full' },
   template: `
-    <div class="flex flex-col h-full overflow-hidden bg-slate-50 dark:bg-slate-900">
+    <div class="flex flex-col h-full overflow-hidden bg-transparent">
       <div
-        class="flex items-center justify-between p-4 border-b dark:border-slate-800 bg-white dark:bg-slate-900 flex-shrink-0"
+        class="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex-shrink-0"
       >
-        <div class="font-semibold text-sm text-slate-700 dark:text-slate-300">Response</div>
+        <div class="font-bold text-xs uppercase tracking-wider text-slate-500">Response</div>
 
         <div class="flex items-center gap-2">
           <!-- View Switcher -->
           <div class="flex items-center gap-2" *ngIf="response()">
             <div
-              class="flex bg-slate-100 dark:bg-slate-800 rounded p-1 border dark:border-slate-700"
+              class="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 border border-slate-200 dark:border-slate-700"
             >
               <button
                 (click)="viewMode.set('json')"
                 [class.bg-white]="viewMode() === 'json'"
                 [class.dark:bg-slate-700]="viewMode() === 'json'"
                 [class.shadow-sm]="viewMode() === 'json'"
-                class="px-3 py-1 text-xs rounded transition-all font-medium text-slate-600 dark:text-slate-300"
+                class="px-3 py-1 text-xs rounded-md transition-all font-medium text-slate-600 dark:text-slate-300"
               >
                 JSON
               </button>
@@ -37,7 +37,7 @@ import { JsonTableComponent } from './json-table.component';
                 [class.bg-white]="viewMode() === 'table'"
                 [class.dark:bg-slate-700]="viewMode() === 'table'"
                 [class.shadow-sm]="viewMode() === 'table'"
-                class="px-3 py-1 text-xs rounded transition-all font-medium text-slate-600 dark:text-slate-300 flex items-center gap-1"
+                class="px-3 py-1 text-xs rounded-md transition-all font-medium text-slate-600 dark:text-slate-300 flex items-center gap-1"
               >
                 Table
               </button>
@@ -46,7 +46,7 @@ import { JsonTableComponent } from './json-table.component';
             <!-- Full Screen Button -->
             <button
               mat-icon-button
-              class="!w-8 !h-8 flex items-center justify-center text-slate-500 hover:text-blue-600"
+              class="!w-8 !h-8 flex items-center justify-center text-slate-400 hover:text-blue-600"
               (click)="isFullScreen.set(true)"
               title="Full Screen"
             >
@@ -56,7 +56,7 @@ import { JsonTableComponent } from './json-table.component';
         </div>
       </div>
 
-      <div class="flex-1 min-h-0 overflow-auto p-4 relative">
+      <div class="flex-1 min-h-0 flex flex-col overflow-hidden p-4 relative">
         <div
           *ngIf="isLoading()"
           class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-black/50 z-10 backdrop-blur-sm"
@@ -64,7 +64,7 @@ import { JsonTableComponent } from './json-table.component';
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
 
-        <div *ngIf="response(); else noResponse">
+        <div *ngIf="response(); else noResponse" class="flex flex-col h-full overflow-hidden">
           <div class="flex items-center gap-4 mb-4 text-xs flex-shrink-0">
             <span
               class="font-bold px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 border dark:border-slate-700"
@@ -75,28 +75,31 @@ import { JsonTableComponent } from './json-table.component';
             >
               Status: {{ response().status }} {{ response().statusText }}
             </span>
-            <span class="text-slate-500 font-mono"> Time: {{ responseTime() ?? '--' }} ms </span>
+            <span class="text-slate-500 font-mono">Time: {{ responseTime() ?? '--' }} ms </span>
           </div>
 
-          <!-- JSON View -->
-          <div *ngIf="viewMode() === 'json'" class="relative group">
-            <button
-              (click)="copyJson()"
-              class="sticky top-2 right-2 float-right p-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity text-slate-600 dark:text-slate-300 flex items-center gap-1 z-10"
-              title="Copy JSON"
-            >
-              <span class="material-icons text-xs" style="font-size: 14px;">content_copy</span>
-              Copy
-            </button>
-            <pre
-              class="text-xs font-mono bg-white dark:bg-slate-950 p-4 rounded border dark:border-slate-800 overflow-x-auto select-text shadow-sm"
-              >{{ response().body | json }}</pre
-            >
-          </div>
+          <!-- Scrollable Content Area -->
+          <div class="flex-1 overflow-auto min-h-0">
+            <!-- JSON View -->
+            <div *ngIf="viewMode() === 'json'" class="relative group">
+              <button
+                (click)="copyJson()"
+                class="sticky top-2 right-2 float-right p-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity text-slate-600 dark:text-slate-300 flex items-center gap-1 z-10"
+                title="Copy JSON"
+              >
+                <span class="material-icons text-xs" style="font-size: 14px;">content_copy</span>
+                Copy
+              </button>
+              <pre
+                class="text-xs font-mono bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 overflow-x-auto select-text shadow-inner"
+                >{{ response().body | json }}</pre
+              >
+            </div>
 
-          <!-- Table View -->
-          <div *ngIf="viewMode() === 'table'" class="overflow-x-auto rounded">
-            <postman-json-table [data]="parsedBody()"></postman-json-table>
+            <!-- Table View -->
+            <div *ngIf="viewMode() === 'table'" class="h-full">
+              <postman-json-table [data]="parsedBody()"></postman-json-table>
+            </div>
           </div>
         </div>
 
