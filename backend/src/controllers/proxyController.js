@@ -61,6 +61,31 @@ const handleRequest = async (ctx) => {
 
 		ctx.body = response.data;
 
+		// 4. Record Validation Proof if Payment was used
+		if (ctx.state.payment && response.status < 400 && config.erc8004.validationRegistry) {
+			try {
+				const { recordValidationProof } = require("../modules/agent.module");
+				const toolName = targetUrl.split("/").pop() || "unknown-api";
+
+				// We need to parse the args logic slightly differently for proxy,
+				// but let's just dump query + body
+				const args = { ...ctx.query, ...ctx.request.body };
+
+				const proofHash = await recordValidationProof(toolName, args, response.data, ctx.state.payment.txHash);
+
+				if (proofHash) {
+					console.log(`[Proxy] Proof recorded: ${proofHash}`);
+					ctx.set("x-validation-proof", proofHash);
+					// Also inject into body if it's an object
+					if (typeof ctx.body === "object" && ctx.body !== null) {
+						ctx.body._proof = proofHash;
+					}
+				}
+			} catch (proofErr) {
+				console.error("[Proxy] Proof recording failed:", proofErr.message);
+			}
+		}
+
 		console.log(`[Proxy] Upstream responded with ${response.status}`);
 	} catch (error) {
 		console.error("[Proxy] Forwarding Failed:", error.message);

@@ -80,5 +80,21 @@
       "null": "空",
       "emptyObject": "{}"
     }
+  },
+  "proofCard": {
+    "title": "Verifik 协议证明",
+    "network": "Avalanche Fuji 测试网",
+    "hashLabel": "证明哈希:",
+    "validated": "链上已验证"
+  },
+  "agentThinking": {
+    "header": "智能体思考中...",
+    "steps": {
+      "analysing": "正在分析请求意图...",
+      "identifying": "正在识别必要工具...",
+      "checking": "正在检查工具要求...",
+      "consulting": "正在查询知识库...",
+      "preparing": "正在准备执行..."
+    }
   }
 }

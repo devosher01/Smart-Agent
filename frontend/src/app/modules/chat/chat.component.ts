@@ -5,11 +5,29 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from 'environments/environment';
 import { AgentWalletService } from './services/agent-wallet.service';
 
+interface ToolCall {
+  tool: string;
+  args: Record<string, any>;
+}
+
+interface PaymentRequired {
+  price: string;
+  priceUsd: number;
+  wallet: string;
+  details: string;
+  receiver_address: string;
+  amount: string;
+  endpoint?: string;
+  toolName?: string;
+  requestId?: string;
+  serviceId?: string;
+}
+
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
-  tool_call?: any;
-  payment_required?: any;
+  tool_call?: ToolCall;
+  payment_required?: PaymentRequired;
   data?: any;
   proof?: string;
 }
@@ -40,6 +58,8 @@ interface AgentFeedback {
   timestamp: string;
   paymentProof: string;
 }
+
+import * as QRCode from 'qrcode';
 
 interface AgentInfo {
   identity: AgentIdentity;
@@ -298,14 +318,14 @@ export class ChatComponent implements OnInit {
 
   private startThinkingSimulation() {
     const steps = [
-      'Analysing request intent...',
-      'Identifying necessary tools...',
-      'Checking tool requirements...',
-      'Consulting knowledge base...',
-      'Preparing tool execution...',
+      'agentThinking.steps.analysing',
+      'agentThinking.steps.identifying',
+      'agentThinking.steps.checking',
+      'agentThinking.steps.consulting',
+      'agentThinking.steps.preparing',
     ];
     this.thinkingSteps.set([]);
-    this.currentThinkingStep.set('Thinking...');
+    this.currentThinkingStep.set('agentThinking.header');
 
     let i = 0;
     const interval = setInterval(() => {
@@ -396,17 +416,40 @@ export class ChatComponent implements OnInit {
     this.scrollToBottom();
   }
 
+  walletQrCode = signal<string>('');
+  showToast = signal<boolean>(false);
+  toastMessage = signal<string>('');
+
   toggleWalletModal() {
     this.showWalletModal.update((show) => !show);
+    if (this.showWalletModal() && this.walletAddress()) {
+      this.generateQrCode(this.walletAddress());
+    }
+  }
+
+  generateQrCode(address: string) {
+    QRCode.toDataURL(address, { width: 200, margin: 1 }, (err, url) => {
+      if (err) console.error(err);
+      else this.walletQrCode.set(url);
+    });
   }
 
   async copyAddress() {
     try {
       await navigator.clipboard.writeText(this.walletAddress());
-      alert('Address copied to clipboard!');
+      this.showToastNotification('Address copied to clipboard!');
     } catch (err) {
       console.error('Failed to copy:', err);
+      this.showToastNotification('Failed to copy address');
     }
+  }
+
+  showToastNotification(message: string) {
+    this.toastMessage.set(message);
+    this.showToast.set(true);
+    setTimeout(() => {
+      this.showToast.set(false);
+    }, 3000);
   }
 
   async resetWallet() {

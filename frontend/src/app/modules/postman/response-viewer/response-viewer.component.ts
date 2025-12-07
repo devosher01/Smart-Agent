@@ -84,6 +84,59 @@ import { JsonTableComponent } from './json-table.component';
             </span>
           </div>
 
+          <!-- Proof Card (ERC8004) -->
+          <div *ngIf="parsedBody()?._proof as proof" class="mx-4 mb-4">
+            <div
+              class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm p-4 animate-fade-in relative overflow-hidden"
+            >
+              <!-- Gradient Line -->
+              <div
+                class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-green-500"
+              ></div>
+
+              <div class="flex items-start gap-4">
+                <div
+                  class="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 flex items-center justify-center flex-shrink-0"
+                >
+                  <mat-icon>verified_user</mat-icon>
+                </div>
+
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between mb-1">
+                    <h4 class="font-bold text-slate-800 dark:text-slate-100">
+                      {{ 'proofCard.title' | transloco }}
+                    </h4>
+                    <span
+                      class="px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-bold uppercase tracking-wide border border-green-200 dark:border-green-900 flex items-center gap-1"
+                    >
+                      <mat-icon class="!inline-block !w-3 !h-3 !text-[12px]">check</mat-icon>
+                      {{ 'proofCard.validated' | transloco }}
+                    </span>
+                  </div>
+                  <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">
+                    {{ 'proofCard.network' | transloco }}
+                  </p>
+
+                  <div class="bg-slate-100 dark:bg-slate-900 rounded p-2 flex items-center gap-2">
+                    <div
+                      class="flex-1 font-mono text-xs text-slate-600 dark:text-slate-300 break-all"
+                    >
+                      {{ proof }}
+                    </div>
+                    <a
+                      [href]="'https://testnet.snowtrace.io/tx/' + proof"
+                      target="_blank"
+                      class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                      [title]="'View on Snowtrace'"
+                    >
+                      <mat-icon class="!w-4 !h-4 !text-[16px]">open_in_new</mat-icon>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Scrollable Content Area -->
           <div class="flex-1 overflow-auto min-h-0">
             <!-- JSON View -->

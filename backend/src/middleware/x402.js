@@ -100,34 +100,31 @@ module.exports = async (ctx, next) => {
 		}
 
 		// Validation Logic
-		console.log(`[x402] Checking if TX ${paymentTx} is used...`);
 		if (isUsed(paymentTx)) {
 			console.warn(`[x402] Replay attempt with TX ${paymentTx}`);
 			ctx.status = 402;
 			ctx.body = { error: "Payment transaction already used." };
 			return;
 		}
-		console.log(`[x402] TX ${paymentTx} is unused. Proceeding to validation.`);
 
 		const tx = await provider.getTransaction(paymentTx);
 
 		if (!tx) {
-			console.log(`[x402] TX ${paymentTx} not found on network.`);
+			console.warn(`[x402] TX ${paymentTx} not found on network.`);
 			ctx.status = 402;
 			ctx.body = { error: "Transaction not found on network." };
 			return;
 		}
 
 		if (tx.to.toLowerCase() !== agentAddress.toLowerCase()) {
-			console.log(`[x402] Recipient mismatch: ${tx.to} vs ${agentAddress}`);
+			console.warn(`[x402] Recipient mismatch: ${tx.to} vs ${agentAddress}`);
 			ctx.status = 402;
 			ctx.body = { error: `Transaction recipient mismatch.` };
 			return;
 		}
 
 		if (tx.value < requiredAmount) {
-			console.log(`[x402] Insufficient amount. Received: ${ethers.formatEther(tx.value)}, Required: ${ethers.formatEther(requiredAmount)}`);
-			// ... (comments)
+			console.warn(`[x402] Insufficient amount. Received: ${ethers.formatEther(tx.value)}, Required: ${ethers.formatEther(requiredAmount)}`);
 			ctx.status = 402;
 			ctx.body = {
 				error: "Insufficient payment (Price may have updated)",
@@ -144,9 +141,7 @@ module.exports = async (ctx, next) => {
 			priceUsd: requiredPriceUsd,
 		};
 
-		console.log(`[x402] Payment Validated: ${ethers.formatEther(tx.value)} AVAX for $${requiredPriceUsd} service.`);
-
-		console.log(`[x402] Marking TX ${paymentTx} as used.`);
+		console.log(`[x402] Payment Validated: ${ethers.formatEther(tx.value)} AVAX from ${tx.from} for ${ctx.path}`);
 		markUsed(paymentTx);
 
 		await next();

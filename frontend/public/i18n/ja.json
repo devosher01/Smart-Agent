@@ -80,5 +80,21 @@
       "null": "null",
       "emptyObject": "{}"
     }
+  },
+  "proofCard": {
+    "title": "Verifikプロトコル証明",
+    "network": "Avalanche Fuji テストネット",
+    "hashLabel": "証明ハッシュ:",
+    "validated": "オンチェーンで検証済み"
+  },
+  "agentThinking": {
+    "header": "エージェントが思考中...",
+    "steps": {
+      "analysing": "リクエストの意図を分析中...",
+      "identifying": "必要なツールを特定中...",
+      "checking": "ツールの要件を確認中...",
+      "consulting": "ナレッジベースを参照中...",
+      "preparing": "ツールの実行を準備中..."
+    }
   }
 }

@@ -80,5 +80,21 @@
       "null": "nulo",
       "emptyObject": "{}"
     }
+  },
+  "proofCard": {
+    "title": "Prova do Protocolo Verifik",
+    "network": "Avalanche Fuji Testnet",
+    "hashLabel": "HASH DA PROVA:",
+    "validated": "VALIDADO NA BLOCKCHAIN"
+  },
+  "agentThinking": {
+    "header": "Agente Pensando...",
+    "steps": {
+      "analysing": "Analisando intenção...",
+      "identifying": "Identificando ferramentas...",
+      "checking": "Verificando requisitos...",
+      "consulting": "Consultando base de conhecimento...",
+      "preparing": "Preparando execução..."
+    }
   }
 }

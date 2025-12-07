@@ -37,8 +37,8 @@ const executeTool = async (toolName, args, paymentTx) => {
 
 	let url = tool.url;
 	console.log(`[Agent] Executing Tool: ${toolName}`);
-	console.log(`[Agent] Target URL: ${url}`);
-	console.log(`[Agent] Args:`, JSON.stringify(args));
+	// console.debug(`[Agent] Target URL: ${url}`);
+	// console.debug(`[Agent] Args:`, JSON.stringify(args));
 
 	// If we want to strictly follow the config for the base URL:
 	if (config.verifik.apiUrl && url.startsWith("https://verifik.app")) {
@@ -108,38 +108,10 @@ const executeTool = async (toolName, args, paymentTx) => {
  * @param {string} paymentTx - Transaction hash if user just paid
  */
 const chatWithAgent = async (userMessage, history = [], paymentTx = null) => {
-	// 1. Construct System Prompt with Tools
-	const systemPrompt = `
-    You are an AI Agent capable of validating identities and performing other tasks.
-    
-    You have access to the following tools:
-    ${JSON.stringify(toolsDef.endpoints, null, 2)}
+	// 1. Construct System Prompt
+	const fullPrompt = constructSystemPrompt(toolsDef.endpoints, history, userMessage, paymentTx);
 
-    When a user asks to perform an action that requires a tool:
-    1. Check if you have all necessary parameters.
-    2. If missing parameters, ask the user for them.
-    3. If you have parameters, DO NOT ASK for payment permission. Output the JSON object IMMEDIATELY to call the tool. The system handles the payment request flow.
-       IGNORE the "estimatedCost" field in the tool definition. Do not mention it.
-       {"tool": "tool_id", "args": { ... }}
-    
-    Output ONLY the JSON object. Do not add conversational text when calling a tool.
-    
-    Current Context:
-    - Payment Transaction Available: ${paymentTx ? paymentTx : "None"}
-    `;
-
-	// 2. Prepare Conversation for Gemini
-	let fullPrompt = systemPrompt + "\n\nConversation History:\n";
-	history.forEach((msg) => {
-		fullPrompt += `${msg.role}: ${msg.content}\n`;
-	});
-	fullPrompt += `User: ${userMessage}\n`;
-
-	if (paymentTx) {
-		fullPrompt += `System: User has completed payment with TX ${paymentTx}. Retry the last tool call.\n`;
-	}
-
-	fullPrompt += "Agent:";
+	console.log(`[Agent] Processing message: "${userMessage.substring(0, 50)}..."`);
 
 	// 3. Call Gemini
 	try {
@@ -367,6 +339,47 @@ const getAgentCard = async () => {
 		console.error("[Agent] Error getting agent card:", error.message);
 		return null;
 	}
+};
+
+/**
+ * Construct the full system prompt including tools and history
+ */
+const constructSystemPrompt = (tools, history, userMessage, paymentTx) => {
+	const systemPrompt = `
+    You are an AI Agent capable of validating identities and performing other tasks.
+    
+    You have access to the following tools:
+    ${JSON.stringify(tools, null, 2)}
+
+    When a user asks to perform an action that requires a tool:
+    1. Check if you have all necessary parameters.
+    2. If missing parameters, ask the user for them.
+    3. If you have parameters, DO NOT ASK for payment permission. Output the JSON object IMMEDIATELY to call the tool. The system handles the payment request flow.
+       IGNORE the "estimatedCost" field in the tool definition. Do not mention it.
+       {"tool": "tool_id", "args": { ... }}
+    
+    Output ONLY the JSON object. Do not add conversational text when calling a tool.
+    
+    Current Context:
+    - Payment Transaction Available: ${paymentTx ? paymentTx : "None"}
+    `;
+
+	let fullPrompt = systemPrompt + "\n\nConversation History:\n";
+
+	// Add max last 10 messages to avoid token limit overflow, but keep context
+	const recentHistory = history.slice(-10);
+	recentHistory.forEach((msg) => {
+		fullPrompt += `${msg.role}: ${msg.content}\n`;
+	});
+
+	fullPrompt += `User: ${userMessage}\n`;
+
+	if (paymentTx) {
+		fullPrompt += `System: User has completed payment with TX ${paymentTx}. Retry the last tool call.\n`;
+	}
+
+	fullPrompt += "Agent:";
+	return fullPrompt;
 };
 
 module.exports = {

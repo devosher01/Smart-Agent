@@ -209,6 +209,18 @@ export class PostmanService {
     req$
       .pipe(
         tap((res) => {
+          // Extract x-validation-proof header if present
+          // Extract x-validation-proof header if present
+          // Cast to any to avoid TS errors with inferred ArrayBuffer types
+          const anyRes = res as any;
+          const proof = anyRes.headers ? anyRes.headers.get('x-validation-proof') : null;
+
+          if (anyRes.body && typeof anyRes.body === 'object') {
+            // Inject headers into the body object for stricter type access if needed,
+            // or just ensure the proof is available for the UI
+            anyRes.body._proof = proof || anyRes.body._proof;
+          }
+
           this.isLoading.set(false);
           this.response.set(res);
           this.responseTime.set(Date.now() - startTime);

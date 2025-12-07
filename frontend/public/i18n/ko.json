@@ -80,5 +80,21 @@
       "null": "null",
       "emptyObject": "{}"
     }
+  },
+  "proofCard": {
+    "title": "Verifik 프로토콜 증명",
+    "network": "Avalanche Fuji 테스트넷",
+    "hashLabel": "증명 해시:",
+    "validated": "온체인 검증 완료"
+  },
+  "agentThinking": {
+    "header": "에이전트 생각 중...",
+    "steps": {
+      "analysing": "요청 의도 분석 중...",
+      "identifying": "필요한 도구 식별 중...",
+      "checking": "도구 요구 사항 확인 중...",
+      "consulting": "지식 베이스 참조 중...",
+      "preparing": "도구 실행 준비 중..."
+    }
   }
 }

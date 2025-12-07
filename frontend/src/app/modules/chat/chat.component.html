@@ -233,9 +233,19 @@
         <div class="space-y-5">
           <!-- Address -->
           <div>
+            <!-- QR Code -->
+            @if (walletQrCode()) {
+              <div class="flex justify-center mb-3">
+                <div class="p-2 bg-white rounded-xl border border-slate-100 shadow-sm">
+                  <img [src]="walletQrCode()" alt="Wallet Address QR" class="w-32 h-32" />
+                </div>
+              </div>
+            }
+
             <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5"
               >Wallet Address</label
             >
+
             <div
               class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 group hover:border-blue-200 transition-colors"
             >
@@ -340,13 +350,13 @@
                     <mat-icon>verified_user</mat-icon>
                   </div>
                   <div class="proof-title">
-                    <div class="proof-label">Verifik Protocol Proof</div>
-                    <div class="proof-network">Avalanche Fuji Testnet</div>
+                    <div class="proof-label">{{ 'proofCard.title' | transloco }}</div>
+                    <div class="proof-network">{{ 'proofCard.network' | transloco }}</div>
                   </div>
                 </div>
                 <div class="proof-body">
                   <div class="proof-hash-row">
-                    <span class="proof-hash-label">Proof Hash:</span>
+                    <span class="proof-hash-label">{{ 'proofCard.hashLabel' | transloco }}</span>
                     <a
                       [href]="'https://testnet.snowtrace.io/tx/' + msg.proof"
                       target="_blank"
@@ -358,7 +368,8 @@
                   </div>
                   <div class="proof-status-row">
                     <span class="status-badge">
-                      <mat-icon class="status-icon">check</mat-icon> VALIDATED ON-CHAIN
+                      <mat-icon class="status-icon">check</mat-icon>
+                      {{ 'proofCard.validated' | transloco }}
                     </span>
                   </div>
                 </div>
@@ -389,7 +400,7 @@
               <div class="dot"></div>
               <div class="dot"></div>
             </div>
-            <span class="thinking-status">{{ currentThinkingStep() }}</span>
+            <span class="thinking-status">{{ 'agentThinking.header' | transloco }}</span>
           </div>
 
           <!-- Steps Log -->
@@ -397,7 +408,7 @@
             @for (step of thinkingSteps(); track $index) {
               <div class="step-item animate-fadeIn">
                 <mat-icon class="step-icon">check_circle_outline</mat-icon>
-                <span>{{ step }}</span>
+                <span>{{ step | transloco }}</span>
               </div>
             }
           </div>
@@ -639,3 +650,13 @@
     </div>
   }
 </div>
+
+<!-- Toast Notification -->
+@if (showToast()) {
+  <div class="toast-notification animate-slideUpFade">
+    <div class="toast-content">
+      <mat-icon class="toast-icon">check_circle</mat-icon>
+      <span>{{ toastMessage() }}</span>
+    </div>
+  </div>
+}
