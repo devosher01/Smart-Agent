@@ -1,12 +1,4 @@
 {
-  "nav": {
-    "chat": "Chat"
-  },
-  "userMenu": {
-    "welcome": "Welcome:",
-    "role": "Role:",
-    "signOut": "Sign out"
-  },
   "appFeatures": {
     "colombia_special_api_identity_lookup": {
       "title": "Colombia - Private Citizen Information",

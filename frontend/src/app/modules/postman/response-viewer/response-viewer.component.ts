@@ -1,52 +1,62 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { PostmanService } from '../postman.service';
 import { JsonTableComponent } from './json-table.component';
 
 @Component({
   selector: 'postman-response-viewer',
   standalone: true,
-  imports: [CommonModule, JsonTableComponent],
+  imports: [CommonModule, JsonTableComponent, MatButtonModule, MatIconModule],
+  host: { class: 'block h-full' },
   template: `
-    <div class="flex flex-col h-full bg-slate-50 dark:bg-slate-900 border-l dark:border-slate-800">
+    <div class="flex flex-col h-full overflow-hidden bg-slate-50 dark:bg-slate-900">
       <div
-        class="flex items-center justify-between p-4 border-b dark:border-slate-800 bg-white dark:bg-slate-900"
+        class="flex items-center justify-between p-4 border-b dark:border-slate-800 bg-white dark:bg-slate-900 flex-shrink-0"
       >
         <div class="font-semibold text-sm text-slate-700 dark:text-slate-300">Response</div>
 
-        <!-- View Switcher -->
-        <div class="flex items-center gap-2" *ngIf="response()">
-          <div class="flex bg-slate-100 dark:bg-slate-800 rounded p-1 border dark:border-slate-700">
-            <button
-              (click)="viewMode.set('json')"
-              [class.bg-white]="viewMode() === 'json'"
-              [class.dark:bg-slate-700]="viewMode() === 'json'"
-              [class.shadow-sm]="viewMode() === 'json'"
-              class="px-3 py-1 text-xs rounded transition-all font-medium text-slate-600 dark:text-slate-300"
+        <div class="flex items-center gap-2">
+          <!-- View Switcher -->
+          <div class="flex items-center gap-2" *ngIf="response()">
+            <div
+              class="flex bg-slate-100 dark:bg-slate-800 rounded p-1 border dark:border-slate-700"
             >
-              JSON
-            </button>
+              <button
+                (click)="viewMode.set('json')"
+                [class.bg-white]="viewMode() === 'json'"
+                [class.dark:bg-slate-700]="viewMode() === 'json'"
+                [class.shadow-sm]="viewMode() === 'json'"
+                class="px-3 py-1 text-xs rounded transition-all font-medium text-slate-600 dark:text-slate-300"
+              >
+                JSON
+              </button>
+              <button
+                (click)="viewMode.set('table')"
+                [class.bg-white]="viewMode() === 'table'"
+                [class.dark:bg-slate-700]="viewMode() === 'table'"
+                [class.shadow-sm]="viewMode() === 'table'"
+                class="px-3 py-1 text-xs rounded transition-all font-medium text-slate-600 dark:text-slate-300 flex items-center gap-1"
+              >
+                Table
+              </button>
+            </div>
+
+            <!-- Full Screen Button -->
             <button
-              (click)="viewMode.set('table')"
-              [class.bg-white]="viewMode() === 'table'"
-              [class.dark:bg-slate-700]="viewMode() === 'table'"
-              [class.shadow-sm]="viewMode() === 'table'"
-              class="px-3 py-1 text-xs rounded transition-all font-medium text-slate-600 dark:text-slate-300 flex items-center gap-1"
+              mat-icon-button
+              class="!w-8 !h-8 flex items-center justify-center text-slate-500 hover:text-blue-600"
+              (click)="isFullScreen.set(true)"
+              title="Full Screen"
             >
-              Table <span class="text-[10px] opacity-70"></span>
-            </button>
-            <!-- TODO: Add Chart views (Linear, Bar) -->
-            <button
-              class="px-3 py-1 text-xs rounded text-slate-400 cursor-not-allowed"
-              title="Linear Chart (Coming Soon)"
-            >
-              Chart
+              <mat-icon class="!text-[18px] !w-[18px] !h-[18px]">open_in_full</mat-icon>
             </button>
           </div>
         </div>
       </div>
 
-      <div class="flex-1 overflow-auto p-4 relative">
+      <div class="flex-1 min-h-0 overflow-auto p-4 relative">
         <div
           *ngIf="isLoading()"
           class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-black/50 z-10 backdrop-blur-sm"
@@ -55,7 +65,7 @@ import { JsonTableComponent } from './json-table.component';
         </div>
 
         <div *ngIf="response(); else noResponse">
-          <div class="flex items-center gap-4 mb-4 text-xs">
+          <div class="flex items-center gap-4 mb-4 text-xs flex-shrink-0">
             <span
               class="font-bold px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 border dark:border-slate-700"
               [ngClass]="{
@@ -72,7 +82,7 @@ import { JsonTableComponent } from './json-table.component';
           <div *ngIf="viewMode() === 'json'" class="relative group">
             <button
               (click)="copyJson()"
-              class="absolute top-2 right-2 p-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity text-slate-600 dark:text-slate-300 flex items-center gap-1 z-10"
+              class="sticky top-2 right-2 float-right p-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity text-slate-600 dark:text-slate-300 flex items-center gap-1 z-10"
               title="Copy JSON"
             >
               <span class="material-icons text-xs" style="font-size: 14px;">content_copy</span>
@@ -118,8 +128,154 @@ import { JsonTableComponent } from './json-table.component';
           </div>
         </ng-template>
       </div>
+
+      <!-- Full Screen Overlay -->
+      <div
+        *ngIf="isFullScreen()"
+        class="fixed inset-0 z-50 bg-white dark:bg-slate-950 flex flex-col animate-fade-in"
+      >
+        <!-- Full Screen Header -->
+        <div
+          class="flex items-center justify-between px-6 py-3 border-b dark:border-slate-800 bg-slate-50 dark:bg-slate-900 shadow-sm print:hidden"
+        >
+          <div class="flex items-center gap-3">
+            <button
+              mat-icon-button
+              (click)="isFullScreen.set(false)"
+              class="!text-slate-500 hover:!text-slate-800"
+            >
+              <mat-icon>arrow_back</mat-icon>
+            </button>
+            <h2 class="text-lg font-semibold text-slate-800 dark:text-slate-200">
+              Request Details & Response
+            </h2>
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              mat-stroked-button
+              color="primary"
+              (click)="print()"
+              class="!flex !items-center !gap-2"
+            >
+              <mat-icon>print</mat-icon>
+              Print
+            </button>
+            <button mat-icon-button color="warn" (click)="isFullScreen.set(false)">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- Full Screen Content -->
+        <div
+          class="flex-1 overflow-auto p-8 max-w-5xl mx-auto w-full print:p-0 print:overflow-visible"
+        >
+          <!-- Request Info Section -->
+          <div
+            class="mb-8 p-6 bg-slate-50 dark:bg-slate-900 rounded-lg border dark:border-slate-800 print:border-0 print:p-0"
+          >
+            <h3
+              class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 border-b pb-2"
+            >
+              Request Information
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" *ngIf="selectedEndpoint() as ep">
+              <div>
+                <div class="text-xs text-slate-400 mb-1">Endpoints</div>
+                <div class="font-mono text-sm break-all font-medium">{{ ep.label }}</div>
+              </div>
+              <div>
+                <div class="text-xs text-slate-400 mb-1">Method</div>
+                <div
+                  class="font-mono text-sm font-bold"
+                  [ngClass]="{
+                    'text-green-600': ep.method === 'GET',
+                    'text-yellow-600': ep.method === 'POST',
+                    'text-blue-600': ep.method === 'PUT',
+                    'text-red-600': ep.method === 'DELETE',
+                  }"
+                >
+                  {{ ep.method }}
+                </div>
+              </div>
+              <div class="col-span-1 md:col-span-2">
+                <div class="text-xs text-slate-400 mb-1">URL</div>
+                <div
+                  class="font-mono text-sm text-blue-600 dark:text-blue-400 break-all bg-white dark:bg-slate-800 p-2 rounded border dark:border-slate-700"
+                >
+                  {{ ep.url }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Response Section -->
+          <div class="mb-8">
+            <h3
+              class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 border-b pb-2 flex items-center justify-between"
+            >
+              <span>Response Body</span>
+              <span class="text-xs font-normal normal-case" *ngIf="response()">
+                {{ response().status }} {{ response().statusText }} ({{ responseTime() }}ms)
+              </span>
+            </h3>
+
+            <div class="print:block">
+              <!-- Always use Table view for print layout if parsed body exists, otherwise JSON -->
+              <ng-container *ngIf="parsedBody() as body">
+                <!-- Use Table with expandAll forced when printing -->
+                <div class="border dark:border-slate-800 rounded-lg overflow-hidden">
+                  <postman-json-table [data]="body" [expandAll]="isPrinting()"></postman-json-table>
+                </div>
+              </ng-container>
+
+              <div
+                *ngIf="!parsedBody() && response()"
+                class="p-4 bg-slate-50 dark:bg-slate-900 rounded border font-mono text-xs whitespace-pre-wrap"
+              >
+                {{ response().body }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   `,
+  styles: [
+    `
+      @media print {
+        .print\\:hidden {
+          display: none !important;
+        }
+        .print\\:block {
+          display: block !important;
+        }
+        .print\\:p-0 {
+          padding: 0 !important;
+        }
+        .print\\:overflow-visible {
+          overflow: visible !important;
+        }
+        .print\\:border-0 {
+          border: none !important;
+        }
+      }
+      .animate-fade-in {
+        animation: fadeIn 0.2s ease-out;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: scale(0.98);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+    `,
+  ],
 })
 export class ResponseViewerComponent {
   private _postmanService = inject(PostmanService);
@@ -127,20 +283,22 @@ export class ResponseViewerComponent {
   responseTime = this._postmanService.responseTime;
   isLoading = this._postmanService.isLoading;
   error = this._postmanService.error;
+  selectedEndpoint = this._postmanService.selectedEndpoint;
 
   viewMode = signal<'json' | 'table'>('json');
+  isFullScreen = signal(false);
+  isPrinting = signal(false);
 
   parsedBody = computed(() => {
     const res = this.response();
     if (!res || !res.body) return null;
 
     let body = res.body;
-    // If it's a string, try to parse it
     if (typeof body === 'string') {
       try {
         body = JSON.parse(body);
       } catch {
-        return body; // return as string if parse fails
+        return body;
       }
     }
     return body;
@@ -151,9 +309,29 @@ export class ResponseViewerComponent {
     if (res && res.body) {
       const json = JSON.stringify(res.body, null, 2);
       navigator.clipboard.writeText(json).then(() => {
-        // Optional: Show toast or feedback
         console.log('JSON copied to clipboard');
       });
     }
+  }
+
+  @HostListener('window:keydown.control.p', ['$event'])
+  @HostListener('window:keydown.meta.p', ['$event'])
+  onPrintShortcut(event: KeyboardEvent) {
+    if (this.isFullScreen()) {
+      event.preventDefault();
+      this.print();
+    }
+  }
+
+  print() {
+    this.isPrinting.set(true);
+    // Slight delay to allow Angular to render the expanded table
+    setTimeout(() => {
+      window.print();
+      // Reset after print dialog closes (or immediately, browser print blocks execution usually)
+      // Actually, in many browsers window.print() is blocking, so this runs after dialog closes.
+      // But to be safe and responsive...
+      this.isPrinting.set(false);
+    }, 500);
   }
 }

@@ -23,11 +23,13 @@ import { CommonModule } from '@angular/common';
       <!-- Arrays -->
       <div *ngIf="isArray(d)" class="border dark:border-slate-800 rounded-md overflow-hidden my-1">
         <div
-          class="px-2 py-1 bg-slate-100 dark:bg-slate-800/50 text-xs text-slate-500 font-mono border-b dark:border-slate-800"
+          (click)="toggleExpanded()"
+          class="px-2 py-1 bg-slate-100 dark:bg-slate-800/50 text-xs text-slate-500 font-mono border-b dark:border-slate-800 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-2 select-none"
         >
-          Array ({{ d.length }})
+          <span class="text-[10px]">{{ isExpanded ? '▼' : '▶' }}</span>
+          <span>Array ({{ d.length }})</span>
         </div>
-        <table class="w-full text-left text-xs border-collapse">
+        <table *ngIf="isExpanded" class="w-full text-left text-xs border-collapse">
           <tbody>
             <tr
               *ngFor="let item of d; let i = index"
@@ -39,7 +41,7 @@ import { CommonModule } from '@angular/common';
                 {{ i }}
               </td>
               <td class="p-2">
-                <postman-json-table [data]="item"></postman-json-table>
+                <postman-json-table [data]="item" [expandAll]="_expandAll"></postman-json-table>
               </td>
             </tr>
           </tbody>
@@ -51,7 +53,16 @@ import { CommonModule } from '@angular/common';
         *ngIf="isObject(d)"
         class="border dark:border-slate-800 rounded-md overflow-hidden my-1 shadow-sm"
       >
-        <table class="w-full text-left text-xs border-collapse">
+        <div
+          (click)="toggleExpanded()"
+          class="px-2 py-1 bg-slate-100 dark:bg-slate-800/50 text-xs text-slate-500 font-mono border-b dark:border-slate-800 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-2 select-none"
+        >
+          <span class="text-[10px]">{{ isExpanded ? '▼' : '▶' }}</span>
+          <span
+            >Object ({{ getKeys(d).length }} {{ getKeys(d).length === 1 ? 'key' : 'keys' }})</span
+          >
+        </div>
+        <table *ngIf="isExpanded" class="w-full text-left text-xs border-collapse">
           <tbody>
             <tr
               *ngFor="let key of getKeys(d)"
@@ -63,7 +74,7 @@ import { CommonModule } from '@angular/common';
                 {{ key }}
               </td>
               <td class="p-2">
-                <postman-json-table [data]="d[key]"></postman-json-table>
+                <postman-json-table [data]="d[key]" [expandAll]="_expandAll"></postman-json-table>
               </td>
             </tr>
             <tr *ngIf="getKeys(d).length === 0">
@@ -86,10 +97,24 @@ import { CommonModule } from '@angular/common';
 export class JsonTableComponent {
   private _data: any;
   parsedData: any;
+  isExpanded = false; // Collapsed by default for performance
 
   @Input() set data(val: any) {
     this._data = val;
     this.parsedData = this.tryParse(val);
+  }
+
+  @Input() set expandAll(value: boolean) {
+    if (value) {
+      this.isExpanded = true;
+    }
+    this._expandAll = value;
+  }
+
+  _expandAll = false;
+
+  toggleExpanded() {
+    this.isExpanded = !this.isExpanded;
   }
 
   tryParse(val: any) {

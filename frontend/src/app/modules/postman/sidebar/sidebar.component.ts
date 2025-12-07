@@ -1,4 +1,13 @@
-import { Component, computed, EventEmitter, inject, Input, Output, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  EventEmitter,
+  inject,
+  Input,
+  Output,
+  signal,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,6 +20,7 @@ import { ApiEndpoint } from '../postman.types';
   selector: 'postman-sidebar',
   standalone: true,
   imports: [CommonModule, FormsModule, MatButtonModule, MatIconModule, MatTooltipModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
       class="flex flex-col w-full h-full bg-slate-50 border-r dark:bg-slate-900 dark:border-slate-800 transition-all duration-300"
@@ -44,7 +54,7 @@ import { ApiEndpoint } from '../postman.types';
       </div>
 
       <div class="flex-1 overflow-y-auto p-2 space-y-2">
-        <div *ngFor="let category of categories()">
+        <div *ngFor="let category of categories(); trackBy: trackByCategory">
           <div
             *ngIf="!collapsed"
             class="text-xs font-bold text-slate-500 uppercase px-3 py-2 truncate"
@@ -55,7 +65,7 @@ import { ApiEndpoint } from '../postman.types';
 
           <div class="space-y-1">
             <button
-              *ngFor="let endpoint of category.endpoints"
+              *ngFor="let endpoint of category.endpoints; trackBy: trackByEndpoint"
               (click)="select(endpoint)"
               class="w-full flex items-center px-3 py-2 text-sm rounded-md transition-colors hover:bg-slate-200 dark:hover:bg-slate-800 text-left group relative"
               [class.bg-blue-100]="selectedEndpoint()?.id === endpoint.id"
@@ -77,7 +87,6 @@ import { ApiEndpoint } from '../postman.types';
                 {{ collapsed ? endpoint.method.substring(0, 1) : endpoint.method }}
               </span>
               <span *ngIf="!collapsed" class="truncate">
-                <!-- Highlight search match logic could go here, but strictly not required yet -->
                 {{ endpoint.label }}
               </span>
             </button>
@@ -139,5 +148,14 @@ export class SidebarComponent {
 
   select(endpoint: ApiEndpoint) {
     this._postmanService.selectEndpoint(endpoint);
+  }
+
+  // TrackBy functions for performance
+  trackByCategory(index: number, category: { name: string; endpoints: ApiEndpoint[] }) {
+    return category.name;
+  }
+
+  trackByEndpoint(index: number, endpoint: ApiEndpoint) {
+    return endpoint.id;
   }
 }

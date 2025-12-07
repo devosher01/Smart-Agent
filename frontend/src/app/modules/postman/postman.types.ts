@@ -3,6 +3,7 @@ import { environment } from 'environments/environment';
 export interface ApiEndpoint {
   id: string;
   label: string;
+  code?: string;
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   url: string;
   description?: string;
@@ -10,6 +11,7 @@ export interface ApiEndpoint {
   params?: { key: string; value: string; type: string; required: boolean; description?: string }[];
   body?: any;
   category?: string;
+  documentationUrl?: string; // URL to the markdown file
 }
 
 export const API_ENDPOINTS: ApiEndpoint[] = [
@@ -49,6 +51,7 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
   {
     id: 'identity-colombia',
     label: 'Colombian Citizen',
+    code: 'colombia_api_identity_lookup',
     category: 'IDENTITY VALIDATION',
     method: 'GET',
     url: `${environment.apiUrl}/v2/co/cedula`,
@@ -72,5 +75,6 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
         description: 'Document number.',
       },
     ],
+    documentationUrl: 'docs/identity-validation/colombia/colombian-citizen.md',
   },
 ];

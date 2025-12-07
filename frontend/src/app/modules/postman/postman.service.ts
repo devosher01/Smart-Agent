@@ -35,6 +35,7 @@ export class PostmanService {
             const dynamicEndpoints: ApiEndpoint[] = features.map((feature: any) => ({
               id: feature._id || feature.code,
               label: feature.name,
+              code: feature.code, // Map the code
               category: this._mapCategory(feature.baseCategory || feature.group),
               method: 'POST',
               // Use the feature's URL if absolute, else prepend apiUrl
