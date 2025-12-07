@@ -355,9 +355,9 @@ const getAgentCard = async () => {
 			],
 			agentAddress: identity.agentAddress,
 			tokenId: agentTokenId,
-			registryContract: config.erc8004?.identityRegistryAddress || "0x7c6a168455C94092f8d51aBC515B73f4Ed9813a6",
-			network: "avalanche-fuji-testnet",
-			chainId: 43113,
+			registryContract: config.erc8004?.identityRegistry || "0x7c6a168455C94092f8d51aBC515B73f4Ed9813a6",
+			network: config.x402?.networkName || "avalanche-fuji-testnet",
+			chainId: Number(config.x402?.chainId) || 43113,
 		};
 	} catch (error) {
 		console.error("[Agent] Error getting agent card:", error.message);

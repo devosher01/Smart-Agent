@@ -13,6 +13,8 @@ const config = {
 	},
 	x402: {
 		rpcUrl: process.env.X402_RPC_URL || "https://api.avax-test.network/ext/bc/C/rpc",
+		chainId: process.env.X402_CHAIN_ID || 43113,
+		networkName: process.env.X402_NETWORK_NAME || "avalanche-fuji-testnet",
 		walletPrivateKey: process.env.X402_WALLET_PRIVATE_KEY,
 	},
 	erc8004: {
