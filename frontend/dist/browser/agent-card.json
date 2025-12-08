@@ -42,8 +42,8 @@
     "validationRegistry": "0x10485d0aC4382c49E0d0583315C81fe15D92899d"
   },
   "links": {
-    "website": "https://x402.verifik.co",
-    "documentation": "https://docs.verifik.co",
+    "website": "https://verifik.app",
+    "documentation": "https://verifik.app/docs",
     "explorer": "https://testnet.snowtrace.io/token/0x7c6a168455C94092f8d51aBC515B73f4Ed9813a6?a=1"
   }
 }
