@@ -61,15 +61,24 @@ const latLonToVector3 = (lat, lon, radius) => {
 };
 
 const pings = [
-	{ name: "Venezuela", lat: 6.4238, lon: -66.5897, color: 0xff0000 },
-	{ name: "Colombia", lat: 4.5709, lon: -74.2973, color: 0xffff00 },
+	{ name: "Colombia", lat: 4.5709, lon: -74.2973, color: 0x4ade80 },
+	{ name: "Argentina", lat: -38.4161, lon: -63.6167, color: 0x3b82f6 },
+	{ name: "Brazil", lat: -14.235, lon: -51.9253, color: 0xfacc15 },
+	{ name: "Mexico", lat: 23.6345, lon: -102.5528, color: 0xef4444 },
 	{ name: "Chile", lat: -35.6751, lon: -71.543, color: 0xffffff },
-	{ name: "Peru", lat: -9.19, lon: -75.0152, color: 0x00ff00 },
-	{ name: "Argentina", lat: -38.4161, lon: -63.6167, color: 0x00ffff },
-	{ name: "Brazil", lat: -14.235, lon: -51.9253, color: 0xff00ff },
-	{ name: "USA", lat: 37.0902, lon: -95.7129, color: 0x4ade80 },
-	{ name: "Canada", lat: 56.1304, lon: -106.3468, color: 0x4ade80 },
-	{ name: "Mexico", lat: 23.6345, lon: -102.5528, color: 0xffa500 },
+	{ name: "Peru", lat: -9.19, lon: -75.0152, color: 0xa855f7 },
+	{ name: "USA", lat: 37.0902, lon: -95.7129, color: 0x22d3ee },
+	{ name: "Canada", lat: 56.1304, lon: -106.3468, color: 0xffffff },
+	{ name: "Costa Rica", lat: 9.7489, lon: -83.7534, color: 0x4ade80 },
+	{ name: "Ecuador", lat: -1.8312, lon: -78.1834, color: 0xfacc15 },
+	{ name: "Dominican Rep", lat: 18.7357, lon: -70.1627, color: 0xef4444 },
+	{ name: "El Salvador", lat: 13.7942, lon: -88.8965, color: 0x3b82f6 },
+	{ name: "Guatemala", lat: 15.7835, lon: -90.2308, color: 0xa855f7 },
+	{ name: "Honduras", lat: 15.2, lon: -86.2419, color: 0x22d3ee },
+	{ name: "Panama", lat: 8.538, lon: -80.7821, color: 0xffffff },
+	{ name: "Paraguay", lat: -23.4425, lon: -58.4438, color: 0xef4444 },
+	{ name: "Bolivia", lat: -16.2902, lon: -63.5887, color: 0xfacc15 },
+	{ name: "Spain", lat: 40.4637, lon: -3.7492, color: 0xf97316 },
 ];
 
 const getGlowTexture = () => {
