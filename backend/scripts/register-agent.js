@@ -109,7 +109,7 @@ async function registerAgent() {
 		// Agent registration details
 		const agentName = "Verifik AI Agent";
 		const agentDescription = "AI-powered agent for identity validation and document processing using x402 payment protocol on Avalanche";
-		const agentCardURI = config.erc8004.agentCardURI || "https://verifik.app/agent-card.json"; // Will create this next
+		const agentCardURI = config.erc8004.agentCardURI || "https://x402-agent.verifik.co/agent-card.json"; // Will create this next
 		const capabilities = ["identity-validation", "document-ocr", "biometric-verification", "cedula-validation", "x402-payment-processing"];
 
 		console.log("📝 Agent Registration Details:");

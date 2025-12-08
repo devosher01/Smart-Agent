@@ -278,7 +278,6 @@ export class PostmanComponent {
       if (selected) {
         // Extract the relative part if possible or use full URL
         // User asked for 'v2/co/cedula'
-        // If endpoint.url is 'https://api.verifik.app/v2/co/cedula', we want 'v2/co/cedula'
 
         let urlToSet = selected.url;
         // Simple heuristic: if it contains /v2/, take from there

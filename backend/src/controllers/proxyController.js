@@ -2,7 +2,7 @@ const axios = require("axios");
 const https = require("https");
 const config = require("../config");
 
-const VERIFIK_BASE_URL = config.verifik.apiUrl || "https://verifik.app";
+const VERIFIK_BASE_URL = config.verifik.apiUrl;
 
 /**
  * Proxies requests to the Verifik API

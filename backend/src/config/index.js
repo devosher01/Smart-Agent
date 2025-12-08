@@ -4,7 +4,7 @@ const config = {
 	env: process.env.NODE_ENV || "development",
 	port: process.env.PORT || 3060,
 	verifik: {
-		apiUrl: process.env.VERIFIK_API_URL || "https://verifik.app",
+		apiUrl: process.env.VERIFIK_API_URL,
 		serviceToken: process.env.VERIFIK_SERVICE_TOKEN,
 	},
 	google: {

@@ -32,16 +32,32 @@ const getServiceAccountToken = async () => {
 
 		let keyFile;
 		if (config.google.keyFilePath) {
-			const resolvedPath = path.resolve(__dirname, "../../", config.google.keyFilePath);
-			if (fs.existsSync(config.google.keyFilePath)) {
-				keyFile = JSON.parse(fs.readFileSync(config.google.keyFilePath, "utf8"));
-			} else if (fs.existsSync(resolvedPath)) {
-				keyFile = JSON.parse(fs.readFileSync(resolvedPath, "utf8"));
+			// Try multiple path resolution strategies
+			const pathsToTry = [
+				config.google.keyFilePath, // Original path (relative to CWD)
+				path.resolve(__dirname, "../../", config.google.keyFilePath), // Relative to module
+				path.resolve(process.cwd(), config.google.keyFilePath), // Relative to process CWD
+				path.resolve(config.google.keyFilePath), // Absolute path if provided
+			];
+
+			let foundPath = null;
+			for (const tryPath of pathsToTry) {
+				if (fs.existsSync(tryPath)) {
+					foundPath = tryPath;
+					break;
+				}
+			}
+
+			if (foundPath) {
+				keyFile = JSON.parse(fs.readFileSync(foundPath, "utf8"));
 			} else {
+				// Last resort: try parsing as JSON string
 				try {
 					keyFile = JSON.parse(config.google.keyFilePath);
 				} catch (e) {
-					throw new Error("Invalid Google Credentials configuration or file not found");
+					throw new Error(
+						`Google Credentials file not found. Tried paths: ${pathsToTry.join(", ")}. ` + `Original path: ${config.google.keyFilePath}`
+					);
 				}
 			}
 		} else {

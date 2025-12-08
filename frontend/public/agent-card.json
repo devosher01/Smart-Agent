@@ -11,8 +11,8 @@
     "x402-payment-processing"
   ],
   "endpoints": {
-    "chat": "https://verifik.app/v2/agent/chat",
-    "validate": "https://verifik.app/v2/x402/validate-id"
+    "chat": "https://x402-agent.verifik.co/api/agent/chat",
+    "validate": "https://x402-agent.verifik.co/api/x402/validate-id"
   },
   "pricing": {
     "identity-validation": "0.001 AVAX",

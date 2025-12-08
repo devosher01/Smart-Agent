@@ -176,7 +176,7 @@ The app will be available at `http://localhost:4200/`
 Update the API URL in `src/app/app.ts`:
 
 ```typescript
-baseUrl = 'https://verifik.app'; // or 'http://localhost:3000' for local dev
+baseUrl = 'https://staging-api.verifik.co'; // or 'http://localhost:3000' for local dev
 ```
 
 ## 📖 How It Works

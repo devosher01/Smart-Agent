@@ -107,8 +107,6 @@ export class HistoryService {
 
     // Calls Verifik Backend directly or via Proxy?
     // Proxy forwards /v2/* to Verifik Backend.
-    // So http://localhost:3060/v2/public/api-requests matches.
-
     return this._httpClient
       .get<ApiRequestResponse>(`${apiUrl}/v2/public/api-requests`, {
         params: queryParams,

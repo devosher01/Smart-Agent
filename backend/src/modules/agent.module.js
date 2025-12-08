@@ -29,12 +29,10 @@ const toolsDef = JSON.parse(fs.readFileSync(toolsPath, "utf8"));
  */
 const executeTool = async (toolName, args, paymentTx, paymentWallet, paymentAmount, userToken) => {
 	const tool = toolsDef.endpoints.find((t) => t.id === toolName);
-	if (!tool) {
-		throw new Error(`Tool ${toolName} not found`);
-	}
+	if (!tool) throw new Error(`Tool ${toolName} not found`);
 
 	// For the migration, we are calling the Verifik Backend (web2)
-	// The URL in the manifest might be "https://verifik.app/..."
+	// The URL in the manifest might be "https://x402-agent.verifik.co/..."
 	// We will use the config to potentially override the base URL or just use as is if it's absolute
 	// But the requirement says "The agent will connect to the source (verifik backend) via web2"
 

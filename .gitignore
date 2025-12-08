@@ -4,13 +4,10 @@
 node_modules/
 
 # Compiled output
-/dist
 /tmp
 /out-tsc
 /bazel-out
 /frontend/node_modules
-frontend/tmp/
-frontend/out-tsc/
 backend/dist/
 
 # Logs

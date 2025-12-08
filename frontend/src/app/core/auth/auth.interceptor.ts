@@ -54,8 +54,9 @@ export const authInterceptor = (
         if (error.status === 401) {
           // Skip auto-logout for our backend API calls to allow debugging
           const isBackendApiCall =
-            req.url.includes('verifik.app') ||
+            req.url.includes('x402-agent.verifik.co') ||
             req.url.includes('api/') ||
+            req.url.includes('staging-api.verifik.co') ||
             req.url.includes('api.verifik.co');
 
           if (!isBackendApiCall) {
