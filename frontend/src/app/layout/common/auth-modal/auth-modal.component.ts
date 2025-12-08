@@ -356,8 +356,7 @@ export class AuthModalComponent {
       const wallet = ethers.Wallet.createRandom();
       console.log('Created Wallet:', wallet.address, wallet.privateKey);
 
-      // For now, let's just alert or log it. Ideally show a nice UI.
-      // Storing in localStorage for demo
+      // Storing in localStorage for authentication
       localStorage.setItem('x402_agent_pk', wallet.privateKey);
       localStorage.setItem('x402_agent_address', wallet.address);
 
@@ -365,7 +364,9 @@ export class AuthModalComponent {
         `Created Agent Wallet! \nAddress: ${wallet.address}\nPrivate Key saved to local storage.`,
       );
 
-      // TODO: Authenticate with this wallet
+      // Close modal and reload to show authenticated state
+      this._dialogRef.close(true);
+      location.reload();
     });
   }
 

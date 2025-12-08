@@ -63,6 +63,14 @@ export class UserComponent implements OnInit, OnDestroy {
 
   walletAddress: string | null = null;
   avaxBalance: string | null = null;
+  hasWeb2Auth: boolean = false; // Track if user has Web2 authentication
+
+  /**
+   * Check if user is authenticated via Web3 only (no Web2 account)
+   */
+  get isWeb3Only(): boolean {
+    return !this.hasWeb2Auth && !!this.walletAddress;
+  }
 
   async fetchWalletInfo() {
     this.walletAddress = this._walletService.getAddress();
@@ -98,7 +106,26 @@ export class UserComponent implements OnInit, OnDestroy {
       const storedUser = localStorage.getItem('verifik_account');
       if (storedUser) {
         this.user = JSON.parse(storedUser);
+        this.hasWeb2Auth = true; // User has Web2 authentication
         this._changeDetectorRef.markForCheck();
+      } else {
+        this.hasWeb2Auth = false; // No Web2 authentication
+
+        // Check if user is authenticated via agent wallet (Web3)
+        const agentAddress = localStorage.getItem('x402_agent_address');
+        const agentPk = localStorage.getItem('x402_agent_pk');
+
+        if (agentAddress && agentPk) {
+          // Create a mock user object for Web3-only authentication
+          this.user = {
+            id: agentAddress,
+            name: 'Agent Wallet',
+            email: `${agentAddress.substring(0, 6)}...${agentAddress.substring(agentAddress.length - 4)}`,
+            credits: 0,
+            role: 'agent',
+          };
+          this._changeDetectorRef.markForCheck();
+        }
       }
     } catch (error) {
       console.warn('[UserComponent] Failed to parse user from localStorage', error);
@@ -151,6 +178,10 @@ export class UserComponent implements OnInit, OnDestroy {
       // AuthService.signOut() does NOT call userService.user = null in its implementation I saw.
       // So I will force it here.
       this._userService.user = null as any;
+
+      // Clear agent wallet credentials as well
+      localStorage.removeItem('x402_agent_pk');
+      localStorage.removeItem('x402_agent_address');
 
       this._changeDetectorRef.markForCheck();
 
