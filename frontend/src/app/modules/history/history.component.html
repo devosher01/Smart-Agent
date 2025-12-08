@@ -14,12 +14,41 @@
         <span class="cursor-default">History</span>
       </div>
       <!-- Title -->
-      <div class="mt-2">
+      <div class="mt-2 flex items-center justify-between">
         <h2
           class="text-3xl md:text-4xl font-extrabold tracking-tight leading-7 sm:leading-10 truncate"
         >
           Request History
         </h2>
+
+        <!-- Toggle -->
+        <div
+          class="flex items-center bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-0.5 ml-4"
+        >
+          <button
+            class="px-3 py-1.5 rounded-md transition-all text-xs font-medium"
+            [class.bg-slate-100]="mode() === 'jwt'"
+            [class.text-slate-900]="mode() === 'jwt'"
+            [class.dark:bg-slate-700]="mode() === 'jwt'"
+            [class.dark:text-white]="mode() === 'jwt'"
+            [class.text-slate-500]="mode() !== 'jwt'"
+            (click)="setMode('jwt')"
+          >
+            JWT
+          </button>
+          <div class="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-0.5"></div>
+          <button
+            class="px-3 py-1.5 rounded-md transition-all text-xs font-medium"
+            [class.bg-slate-100]="mode() === 'x402'"
+            [class.text-slate-900]="mode() === 'x402'"
+            [class.dark:bg-slate-700]="mode() === 'x402'"
+            [class.dark:text-white]="mode() === 'x402'"
+            [class.text-slate-500]="mode() !== 'x402'"
+            (click)="setMode('x402')"
+          >
+            x402
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -36,8 +65,15 @@
               <span
                 class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                 [ngClass]="getStatusColor(request.statusCode)"
+                *ngIf="request.statusCode"
               >
                 {{ getStatusLabel(request.statusCode) }} ({{ request.statusCode }})
+              </span>
+              <span
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400"
+                *ngIf="!request.statusCode"
+              >
+                Confirmed
               </span>
             </td>
           </ng-container>
@@ -48,7 +84,7 @@
             <td mat-cell *matCellDef="let request" class="py-4">
               <div class="flex flex-col">
                 <span class="font-medium text-slate-900 dark:text-slate-100">{{
-                  request.endpoint || request.code
+                  request.endpoint || request.code || request.serviceId
                 }}</span>
                 <span class="text-xs text-secondary mt-1">{{ request.project }}</span>
               </div>
@@ -84,11 +120,48 @@
             </td>
           </ng-container>
 
+          <!-- RequestID Column (x402) -->
+          <ng-container matColumnDef="requestId">
+            <th mat-header-cell *matHeaderCellDef>Request ID</th>
+            <td mat-cell *matCellDef="let request" class="py-4 font-mono text-xs">
+              {{ request.requestId }}
+            </td>
+          </ng-container>
+
+          <!-- Amount Column (x402) -->
+          <ng-container matColumnDef="amount">
+            <th mat-header-cell *matHeaderCellDef>Amount</th>
+            <td mat-cell *matCellDef="let request" class="py-4 font-mono text-xs text-green-600">
+              <ng-container *ngIf="mode() === 'x402'">
+                {{ request.paymentAmount || request.cost }}
+                <span class="text-xs text-gray-500">AVAX</span>
+              </ng-container>
+              <ng-container *ngIf="mode() !== 'x402'"> $ {{ request.cost }} </ng-container>
+            </td>
+          </ng-container>
+
+          <!-- Transaction Hash Column (x402) -->
+          <ng-container matColumnDef="transactionHash">
+            <th mat-header-cell *matHeaderCellDef>Tx Hash</th>
+            <td mat-cell *matCellDef="let request" class="py-4">
+              <a
+                [href]="'https://testnet.snowtrace.io/tx/' + request.paymentTx"
+                target="_blank"
+                class="text-blue-500 hover:underline font-mono text-xs"
+              >
+                {{ shortHash(request.paymentTx) }}
+              </a>
+              <button mat-icon-button (click)="copyText(request.paymentTx)" class="ml-1 w-6 h-6">
+                <mat-icon class="icon-size-3">content_copy</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
           <!-- Date Column -->
           <ng-container matColumnDef="date">
             <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
             <td mat-cell *matCellDef="let request" class="py-4 whitespace-nowrap text-secondary">
-              {{ formatDate(request.createdAt) }}
+              {{ formatDate(request.createdAt || request.timestamp) }}
             </td>
           </ng-container>
 

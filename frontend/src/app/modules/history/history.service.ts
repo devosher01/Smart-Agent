@@ -12,9 +12,13 @@ export interface ApiRequest {
   method: string;
   status: string; // "ok", "failed", etc.
   statusCode: number; // 200, 400, 500, etc.
+  cost?: number;
   duration: number; // in ms
   createdAt: string;
   client: string; // client id
+  paymentTx?: string;
+  paymentWallet?: string;
+  paymentAmount?: string;
   // Add other fields as per the backend model if needed
   // The controller returns: data.docs ? data.docs : data
 }
@@ -76,6 +80,50 @@ export class HistoryService {
         }),
         catchError((err) => {
           console.error('Error fetching history:', err);
+          this.error.set('Failed to load history');
+          return throwError(() => err);
+        }),
+        finalize(() => {
+          this.loading.set(false);
+        }),
+      );
+  }
+
+  /**
+   * Get Public API requests history (x402)
+   */
+  getPublicHistory(wallet: string, page: number = 1, limit: number = 10) {
+    this.loading.set(true);
+
+    this.error.set(null);
+
+    const apiUrl = environment.apiUrl;
+    const queryParams = {
+      wallet,
+      page: page.toString(),
+      limit: limit.toString(),
+      sort: '-createdAt',
+    };
+
+    // Calls Verifik Backend directly or via Proxy?
+    // Proxy forwards /v2/* to Verifik Backend.
+    // So http://localhost:3060/v2/public/api-requests matches.
+
+    return this._httpClient
+      .get<ApiRequestResponse>(`${apiUrl}/v2/public/api-requests`, {
+        params: queryParams,
+      })
+      .pipe(
+        tap((response) => {
+          // If we want to store it in a separate signal or same?
+          // For now, let's return it and let component handle it, or update 'requests' signal?
+          // If we update 'requests' signal, the component logic needs to know if it's x402 data.
+          // Let's update requests signal for simplicity, component subscribes to it.
+          this.requests.set(response.data || []);
+          this.total.set(response.total || 0);
+        }),
+        catchError((err) => {
+          console.error('Error fetching public history:', err);
           this.error.set('Failed to load history');
           return throwError(() => err);
         }),

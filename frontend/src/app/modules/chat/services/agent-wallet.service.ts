@@ -153,7 +153,7 @@ export class AgentWalletService {
     serviceId: string,
     requestId: string,
     amountEther: string,
-  ): Promise<ethers.providers.TransactionResponse> {
+  ): Promise<{ tx: ethers.providers.TransactionResponse; signerAddress: string }> {
     const signer = await this.getSigner();
     const signerAddress = await signer.getAddress();
 
@@ -234,7 +234,8 @@ export class AgentWalletService {
     });
 
     // Call the contract function with manual gas settings
-    return await contract['payForService'](serviceId, requestId, txOptions);
+    const tx = await contract['payForService'](serviceId, requestId, txOptions);
+    return { tx, signerAddress };
   }
 
   /**
@@ -333,5 +334,54 @@ export class AgentWalletService {
     } catch (error) {
       console.warn('Failed to refresh balance:', error);
     }
+  }
+
+  /**
+   * Get payment history from the VerifikPayment contract
+   * @param contractAddress - Contract address to query
+   */
+  async getPaymentHistory(
+    contractAddress: string = '0x72Fdce477bBD9f322907b3b1C4a58bC4d5D64C3a',
+  ): Promise<any[]> {
+    const walletAddress = this.getAddress();
+    if (!walletAddress) return [];
+
+    // ABI for the event
+    const ABI = [
+      'event PaymentReceived(address indexed payer, string serviceId, string requestId, uint256 amount)',
+    ];
+    const contract = new ethers.Contract(contractAddress, ABI, this.provider);
+
+    // Filter for PaymentReceived events where payer is current wallet
+    console.log('Fetching payment history for:', walletAddress, 'on contract:', contractAddress);
+    const filter = contract.filters['PaymentReceived'](walletAddress);
+
+    // Get current block to limit range (optimization)
+    const currentBlock = await this.provider.getBlockNumber();
+    const fromBlock = Math.max(0, currentBlock - 2000000); // Look back ~46 days (2s block time)
+
+    // Query logs
+    const logs = await contract.queryFilter(filter, fromBlock);
+
+    // Parse logs - optimization: reverse to show newest first
+    const reversedLogs = logs.slice().reverse();
+
+    return Promise.all(
+      reversedLogs.map(async (log) => {
+        const parsed = contract.interface.parseLog(log);
+        // We fetching block timestamp might be slow for many logs.
+        // For now, let's fetch it. If slow, we can optimize.
+        const block = await log.getBlock();
+
+        return {
+          transactionHash: log.transactionHash,
+          blockNumber: log.blockNumber,
+          timestamp: block.timestamp * 1000,
+          serviceId: parsed.args['serviceId'],
+          requestId: parsed.args['requestId'],
+          amount: ethers.utils.formatEther(parsed.args['amount']),
+        };
+      }),
+    );
   }
 }

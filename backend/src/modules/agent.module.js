@@ -23,8 +23,10 @@ const toolsDef = JSON.parse(fs.readFileSync(toolsPath, "utf8"));
  * @param {string} toolName
  * @param {Object} args
  * @param {string} paymentTx - Optional payment transaction hash
+ * @param {string} paymentWallet - Optional payment wallet address
+ * @param {string} paymentAmount - Optional payment amount
  */
-const executeTool = async (toolName, args, paymentTx) => {
+const executeTool = async (toolName, args, paymentTx, paymentWallet, paymentAmount) => {
 	const tool = toolsDef.endpoints.find((t) => t.id === toolName);
 	if (!tool) {
 		throw new Error(`Tool ${toolName} not found`);
@@ -53,6 +55,14 @@ const executeTool = async (toolName, args, paymentTx) => {
 
 	if (paymentTx) {
 		headers["x-payment-tx"] = paymentTx;
+	}
+
+	if (paymentWallet) {
+		headers["x-wallet-address"] = paymentWallet;
+	}
+
+	if (paymentAmount) {
+		headers["x-payment-amount"] = paymentAmount;
 	}
 
 	try {
@@ -114,8 +124,10 @@ const executeTool = async (toolName, args, paymentTx) => {
  * @param {string} userMessage
  * @param {Array} history
  * @param {string} paymentTx - Transaction hash if user just paid
+ * @param {string} paymentWallet - Wallet address that paid
+ * @param {string} paymentAmount - Amount paid
  */
-const chatWithAgent = async (userMessage, history = [], paymentTx = null) => {
+const chatWithAgent = async (userMessage, history = [], paymentTx = null, paymentWallet = null, paymentAmount = null) => {
 	// 1. Construct System Prompt
 	const fullPrompt = constructSystemPrompt(toolsDef.endpoints, history, userMessage, paymentTx);
 
@@ -158,7 +170,7 @@ const chatWithAgent = async (userMessage, history = [], paymentTx = null) => {
 					console.log("[Agent] Detected Tool Call:", toolCall);
 
 					// Execute Tool
-					const toolResult = await executeTool(toolCall.tool, toolCall.args, paymentTx);
+					const toolResult = await executeTool(toolCall.tool, toolCall.args, paymentTx, paymentWallet, paymentAmount);
 
 					// If payment required, return special status to frontend
 					if (toolResult.status === "payment_required") {

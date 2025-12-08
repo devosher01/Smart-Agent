@@ -583,7 +583,7 @@ export class RequestEditorComponent {
       const serviceId = ep.code || 'api-call';
       const requestId = `req_${Date.now()}`;
 
-      const tx = await this._walletService.payForService(
+      const { tx, signerAddress } = await this._walletService.payForService(
         contractAddress,
         serviceId,
         requestId,
@@ -599,11 +599,26 @@ export class RequestEditorComponent {
       // Refresh wallet balance to update UI
       this._walletService.refreshBalance();
 
-      // Update the x-payment-tx header with the transaction hash
-      const paymentTxHeader = ep.headers?.find((h) => h.key === 'x-payment-tx');
-      if (paymentTxHeader) {
-        paymentTxHeader.value = tx.hash;
+      // Refresh wallet balance to update UI
+      this._walletService.refreshBalance();
+
+      // Inject Payment Headers
+      // Use the address that actually signed the transaction
+      const walletAddress = signerAddress;
+
+      if (!ep.headers) {
+        ep.headers = [];
       }
+
+      // Remove old payment headers
+      ep.headers = ep.headers.filter(
+        (h) => h.key !== 'x-payment-tx' && h.key !== 'x-wallet-address',
+      );
+
+      // Add new payment headers
+      ep.headers.push({ key: 'x-payment-tx', value: tx.hash });
+      ep.headers.push({ key: 'x-wallet-address', value: signerAddress });
+      ep.headers.push({ key: 'x-payment-amount', value: amount });
 
       // Close modal
       this.showPaymentModal.set(false);

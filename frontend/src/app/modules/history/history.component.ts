@@ -8,6 +8,7 @@ import {
   signal,
   effect,
 } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatPaginator, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
@@ -16,6 +17,7 @@ import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DateTime } from 'luxon';
 import { HistoryService, ApiRequest } from './history.service';
+import { AgentWalletService } from '../chat/services/agent-wallet.service';
 
 @Component({
   selector: 'history',
@@ -36,13 +38,20 @@ export class HistoryComponent implements OnInit {
   @ViewChild(MatPaginator) paginator: MatPaginator;
   @ViewChild(MatSort) sort: MatSort;
 
+  // Key Properties
   displayedColumns: string[] = ['status', 'service', 'parameters', 'date', 'duration'];
-  dataSource = new MatTableDataSource<ApiRequest>([]);
+  dataSource = new MatTableDataSource<any>([]);
 
-  // Inject service
+  // Inject Services
   private _historyService = inject(HistoryService);
+  private _walletService = inject(AgentWalletService);
+  private _router = inject(Router);
+  private _route = inject(ActivatedRoute);
 
-  // Signals from service
+  // Signals
+  mode = signal<'jwt' | 'x402'>('jwt');
+
+  // Data Signals (from HistoryService)
   requests = this._historyService.requests;
   total = this._historyService.total;
   loading = this._historyService.loading;
@@ -50,21 +59,56 @@ export class HistoryComponent implements OnInit {
   pageIndex = this._historyService.pageIndex;
 
   constructor() {
-    // React to changes in requests signal
+    // React to changes in requests/mode to update dataSource
     effect(() => {
-      this.dataSource.data = this.requests();
+      const allRequests = this.requests();
+      if (this.mode() === 'jwt') {
+        this.dataSource.data = allRequests; // Show all for JWT (server filters usually) or filter client-side if mixed
+        this.displayedColumns = ['status', 'service', 'parameters', 'date', 'duration'];
+      } else {
+        this.dataSource.data = allRequests; // Show all from public endpoint (already filtered by wallet)
+        this.displayedColumns = ['service', 'transactionHash', 'amount', 'date'];
+      }
     });
   }
 
   ngOnInit(): void {
-    this.loadData();
+    // Subscribe to query params to handle mode switching and deep linking
+    this._route.queryParams.subscribe((params) => {
+      const view = params['view'];
+      const targetMode = view === 'x402' ? 'x402' : 'jwt';
+
+      // If switching modes, reset pagination
+      if (this.mode() !== targetMode) {
+        this.pageIndex.set(0);
+        this.mode.set(targetMode);
+      }
+
+      // Always load data when params change (initial load or navigation)
+      this.loadData();
+    });
+  }
+
+  setMode(mode: 'jwt' | 'x402') {
+    // Update URL, which triggers the subscription above
+    this._router.navigate([], {
+      relativeTo: this._route,
+      queryParams: { view: mode === 'x402' ? 'x402' : null },
+      queryParamsHandling: 'merge',
+    });
   }
 
   loadData() {
-    // Backend expects 1-based page index usually, but let's check the service implementation
-    // The service takes page (default 1) and limit (default 10)
-    // MatPaginator uses 0-based index
-    this._historyService.getHistory(this.pageIndex() + 1, this.pageSize()).subscribe();
+    if (this.mode() === 'jwt') {
+      this._historyService.getHistory(this.pageIndex() + 1, this.pageSize()).subscribe();
+    } else {
+      const wallet = this._walletService.getAddress();
+      if (wallet) {
+        this._historyService
+          .getPublicHistory(wallet, this.pageIndex() + 1, this.pageSize())
+          .subscribe();
+      }
+    }
   }
 
   onPaginatorEvent(event: PageEvent) {
@@ -74,11 +118,26 @@ export class HistoryComponent implements OnInit {
   }
 
   /**
+   * Copy text helper
+   */
+  copyText(text: string) {
+    navigator.clipboard.writeText(text);
+  }
+
+  shortHash(hash: string): string {
+    if (!hash) return '';
+    return `${hash.substring(0, 6)}...${hash.substring(hash.length - 4)}`;
+  }
+
+  /**
    * Format date using Luxon
    */
-  formatDate(dateStr: string): string {
-    if (!dateStr) return '-';
-    return DateTime.fromISO(dateStr).toFormat('MMM dd, yyyy HH:mm:ss');
+  formatDate(date: string | number): string {
+    if (!date) return '-';
+    if (typeof date === 'number') {
+      return DateTime.fromMillis(date).toFormat('MMM dd, yyyy HH:mm:ss');
+    }
+    return DateTime.fromISO(date).toFormat('MMM dd, yyyy HH:mm:ss');
   }
 
   /**

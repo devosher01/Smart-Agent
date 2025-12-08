@@ -280,11 +280,17 @@ export class ChatComponent implements OnInit {
     }
   }
 
-  async callAgent(message: string, paymentTx: string | null = null) {
+  async callAgent(
+    message: string,
+    paymentTx: string | null = null,
+    paymentAmount: string | null = null,
+  ) {
     const payload = {
       message: message,
       history: this.messages().map((m) => ({ role: m.role, content: m.content })),
       paymentTx: paymentTx,
+      paymentWallet: this.walletAddress(),
+      paymentAmount: paymentAmount,
     };
 
     this.http.post<any>(this.apiUrl, payload).subscribe({
@@ -370,7 +376,7 @@ export class ChatComponent implements OnInit {
     const requestId = details.requestId || `req_${Date.now()}`;
 
     try {
-      const tx = await this.walletService.payForService(
+      const { tx } = await this.walletService.payForService(
         contractAddress,
         serviceId,
         requestId,
@@ -393,7 +399,7 @@ export class ChatComponent implements OnInit {
 
       this.lastPaymentTx.set(tx.hash);
 
-      await this.callAgent('Payment complete. Please proceed.', tx.hash);
+      await this.callAgent('Payment complete. Please proceed.', tx.hash, amount);
       await this.refreshBalance();
     } catch (error: any) {
       this.handleError(error);

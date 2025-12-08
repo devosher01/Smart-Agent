@@ -36,6 +36,11 @@ const handleRequest = async (ctx) => {
 		Accept: "application/json",
 	};
 
+	// Forward Payment Headers
+	if (ctx.get("x-payment-tx")) headers["x-payment-tx"] = ctx.get("x-payment-tx");
+	if (ctx.get("x-wallet-address")) headers["x-wallet-address"] = ctx.get("x-wallet-address");
+	if (ctx.get("x-payment-amount")) headers["x-payment-amount"] = ctx.get("x-payment-amount");
+
 	try {
 		// Forward request
 		const response = await axios({
