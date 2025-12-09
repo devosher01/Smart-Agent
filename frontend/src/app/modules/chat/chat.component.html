@@ -411,8 +411,8 @@
               </div>
             }
 
-            <!-- Feedback Button (show after successful tool execution) -->
-            @if (msg.role === 'assistant' && msg.data) {
+            <!-- Feedback Button (show after successful tool execution) - Only for x402 -->
+            @if (chatMode() === 'x402' && msg.role === 'assistant' && msg.data) {
               <div class="feedback-prompt">
                 <p>Was this helpful?</p>
                 <button class="feedback-button" (click)="toggleFeedbackModal()">
