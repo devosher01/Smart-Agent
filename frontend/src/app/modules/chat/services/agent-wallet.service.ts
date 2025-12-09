@@ -97,6 +97,7 @@ export class AgentWalletService {
 
     // 2. MetaMask
     if (walletType === 'metamask' && (window as any).ethereum) {
+      await this.switchToAvalancheFuji();
       const provider = new ethers.providers.Web3Provider((window as any).ethereum);
       await provider.send('eth_requestAccounts', []);
       return provider.getSigner();
@@ -299,6 +300,47 @@ export class AgentWalletService {
       paymentProof,
       txOptions,
     );
+  }
+
+  /**
+   * Enforce network switch to Avalanche Fuji Testnet
+   */
+  private async switchToAvalancheFuji() {
+    if (!(window as any).ethereum) return;
+
+    // Fuji Testnet Chain ID ('0xa869' = 43113)
+    const chainId = '0xa869';
+
+    try {
+      await (window as any).ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId }],
+      });
+    } catch (switchError: any) {
+      // This error code indicates that the chain has not been added to MetaMask.
+      if (switchError.code === 4902) {
+        try {
+          await (window as any).ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [
+              {
+                chainId,
+                chainName: 'Avalanche Fuji Testnet',
+                nativeCurrency: {
+                  name: 'Avalanche',
+                  symbol: 'AVAX',
+                  decimals: 18,
+                },
+                rpcUrls: ['https://api.avax-test.network/ext/bc/C/rpc'],
+                blockExplorerUrls: ['https://testnet.snowtrace.io/'],
+              },
+            ],
+          });
+        } catch (addError) {
+          console.error('Failed to add network:', addError);
+        }
+      }
+    }
   }
 
   resetWallet() {
