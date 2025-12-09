@@ -145,11 +145,11 @@ export class AgentWalletService {
 
     // If code is '0x', it's an EOA (User Address), not a contract.
     // This happens if the backend is misconfigured and returns the wallet address instead of the payment contract.
-    // In this case, we fallback to a known contract (Reputation Registry) to allow the flow to proceed/test.
+    // In this case, we fallback to the x402 payment contract to allow the flow to proceed/test.
     if (code === '0x') {
       console.warn(`Target ${contractAddress} is not a contract (EOA). Using fallback contract.`);
-      // Fallback to Reputation Registry (Fuji)
-      contractAddress = '0xc8AF65010D6Bf85e4DC89D9D13E9cC185df919B1';
+      // Fallback to x402 Payment Contract (Fuji)
+      contractAddress = '0x72Fdce477bBD9f322907b3b1C4a58bC4d5D64C3a';
     }
 
     // ABI for the payForService function
