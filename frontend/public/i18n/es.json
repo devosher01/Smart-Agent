@@ -14,7 +14,11 @@
     "active": "Activo",
     "connectWeb2Account": "Conectar Cuenta Web2",
     "connectWeb2AccountDescription": "Vincula tu correo o teléfono para acceder a créditos",
-    "resetWallet": "Restablecer Billetera"
+    "connectWallet": "Conectar Billetera",
+    "connectWalletDescription": "Vincula una billetera para acceder a funciones Web3 y pagos AVAX",
+    "resetWallet": "Restablecer Billetera",
+    "signOutWeb2": "Cerrar Sesión Web2",
+    "signOutWeb3": "Cerrar Sesión Billetera"
   },
   "postman": {
     "layout": {

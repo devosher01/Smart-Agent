@@ -14,7 +14,11 @@
     "active": "Active",
     "connectWeb2Account": "Connect Web2 Account",
     "connectWeb2AccountDescription": "Link your email or phone to access credits",
-    "resetWallet": "Reset Wallet"
+    "connectWallet": "Connect Wallet",
+    "connectWalletDescription": "Link a wallet to access Web3 features and AVAX payments",
+    "resetWallet": "Reset Wallet",
+    "signOutWeb2": "Sign Out Web2 Account",
+    "signOutWeb3": "Sign Out Wallet"
   },
   "postman": {
     "layout": {

@@ -14,7 +14,11 @@
     "active": "Ativo",
     "connectWeb2Account": "Conectar Conta Web2",
     "connectWeb2AccountDescription": "Vincule seu e-mail ou telefone para acessar créditos",
-    "resetWallet": "Redefinir Carteira"
+    "connectWallet": "Conectar Carteira",
+    "connectWalletDescription": "Vincule uma carteira para acessar recursos Web3 e pagamentos AVAX",
+    "resetWallet": "Redefinir Carteira",
+    "signOutWeb2": "Sair da Conta Web2",
+    "signOutWeb3": "Sair da Carteira"
   },
   "postman": {
     "layout": {

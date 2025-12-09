@@ -78,11 +78,27 @@ export class UserComponent implements OnInit, OnDestroy {
     return !this.hasWeb2Auth && !!this.walletAddress;
   }
 
+  /**
+   * Check if user is authenticated via Web2 only (has credits but no wallet)
+   */
+  get isWeb2Only(): boolean {
+    return this.hasWeb2Auth && !this.walletAddress;
+  }
+
+  /**
+   * Check if user has both Web2 and Web3 authentication (hybrid)
+   */
+  get isHybrid(): boolean {
+    return this.hasWeb2Auth && !!this.walletAddress;
+  }
+
   async fetchWalletInfo() {
     this.walletAddress = this._walletService.getAddress();
     if (this.walletAddress) {
       this._walletService.refreshBalance();
     }
+    // Mark for check to update UI state (isWeb2Only, etc.)
+    this._changeDetectorRef.markForCheck();
   }
 
   copyWalletAddress() {
@@ -114,6 +130,11 @@ export class UserComponent implements OnInit, OnDestroy {
       if (storedUser) {
         this.user = JSON.parse(storedUser);
         this.hasWeb2Auth = true; // User has Web2 authentication
+        
+        // Check if wallet also exists (hybrid auth)
+        // Note: walletAddress is already fetched in fetchWalletInfo() above
+        // This will be set by the time we check isWeb2Only
+        
         this._changeDetectorRef.markForCheck();
       } else {
         this.hasWeb2Auth = false; // No Web2 authentication
@@ -188,35 +209,57 @@ export class UserComponent implements OnInit, OnDestroy {
 
   /**
    * Open Auth Modal
+   * @param startWithWallet - If true, opens directly to wallet connection flow
    */
-  openAuthModal(): void {
-    const dialogRef = this._matDialog.open(AuthModalComponent, {
+  openAuthModal(startWithWallet: boolean = false): void {
+    this._matDialog.open(AuthModalComponent, {
       panelClass: 'auth-modal-dialog',
       width: '400px',
       maxWidth: '100vw',
+      data: { startWithWallet }, // Pass data to the modal component
     });
   }
 
   /**
-   * Sign out or Reset Wallet
-   * - Web3-only: Reset wallet (clear wallet data, keep Web2 credentials)
-   * - Web2/Hybrid: Full sign out (clear everything)
+   * Sign out Web2 account only
+   * Clears Web2 credentials but preserves wallet
    */
-  signOut(): void {
-    if (this.isWeb3Only) {
-      // Web3-only: Just reset the wallet, keep Web2 credentials intact
-      this.resetWallet();
-    } else {
-      // Web2 or Hybrid: Full sign out
-      this.fullSignOut();
-    }
+  signOutWeb2(): void {
+    this._authService.signOut().subscribe(() => {
+      // Clear Web2 user data
+      this.user = null;
+      this._userService.user = null as any;
+      this.hasWeb2Auth = false;
+
+      // If user has wallet, create a mock user object for Web3-only display
+      if (this.walletAddress) {
+        const walletType = localStorage.getItem('x402_wallet_type');
+        let walletName = 'Agent Wallet';
+        if (walletType === 'metamask') {
+          walletName = 'MetaMask Wallet';
+        }
+
+        this.user = {
+          id: this.walletAddress,
+          name: walletName,
+          email: `${this.walletAddress.substring(0, 6)}...${this.walletAddress.substring(this.walletAddress.length - 4)}`,
+          credits: 0,
+          role: 'agent',
+        };
+      }
+
+      this._changeDetectorRef.markForCheck();
+
+      // Reload to ensure clean state
+      location.reload();
+    });
   }
 
   /**
-   * Reset wallet only (Web3-only users)
+   * Sign out Web3 wallet only
    * Clears wallet data but preserves Web2 credentials
    */
-  private resetWallet(): void {
+  signOutWeb3(): void {
     // Clear only wallet credentials (encrypted and plain)
     // This will clear: x402_agent_pk_encrypted, x402_encryption_method,
     // x402_encryption_salt, x402_credential_id, x402_agent_pk, x402_agent_address
@@ -224,31 +267,41 @@ export class UserComponent implements OnInit, OnDestroy {
     localStorage.removeItem('x402_agent_address');
     localStorage.removeItem('x402_wallet_type'); // Clear wallet type (metamask, etc.)
 
-    // Clear user state
-    this.user = null;
-    this._changeDetectorRef.markForCheck();
+    // Clear wallet-related state
+    this.walletAddress = null;
+    this.avaxBalance = null;
 
-    // Navigate to home
-    this._router.navigate(['/']);
+    // If user has Web2 auth, keep the user object
+    // Otherwise, clear user state
+    if (!this.hasWeb2Auth) {
+      this.user = null;
+      this._changeDetectorRef.markForCheck();
+      // Navigate to home for Web3-only users
+      this._router.navigate(['/']);
+    } else {
+      // For hybrid users, just refresh wallet info display
+      this._changeDetectorRef.markForCheck();
+      // Reload to refresh the UI
+      location.reload();
+    }
   }
 
   /**
-   * Full sign out (Web2 or Hybrid users)
-   * Clears both Web2 and Web3 credentials
+   * Sign out or Reset Wallet (legacy method for single-button scenarios)
+   * - Web3-only: Reset wallet
+   * - Web2-only: Sign out Web2
+   * - Hybrid: This shouldn't be called, use signOutWeb2() or signOutWeb3() instead
    */
-  private fullSignOut(): void {
-    this._authService.signOut().subscribe(() => {
-      this.user = null;
-      this._userService.user = null as any;
-
-      // Clear all agent wallet credentials (encrypted and plain)
-      this._encryptionService.clearEncryptionData();
-      localStorage.removeItem('x402_agent_address');
-
-      this._changeDetectorRef.markForCheck();
-
-      // Reload to ensure clean state and show login button
-      location.reload();
-    });
+  signOut(): void {
+    if (this.isWeb3Only) {
+      // Web3-only: Just reset the wallet
+      this.signOutWeb3();
+    } else if (this.isWeb2Only) {
+      // Web2-only: Sign out Web2
+      this.signOutWeb2();
+    } else {
+      // Hybrid: Default to Web2 sign out (safer)
+      this.signOutWeb2();
+    }
   }
 }

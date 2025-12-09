@@ -14,7 +14,11 @@
     "active": "アクティブ",
     "connectWeb2Account": "Web2アカウントを接続",
     "connectWeb2AccountDescription": "メールまたは電話をリンクしてクレジットにアクセス",
-    "resetWallet": "ウォレットをリセット"
+    "connectWallet": "ウォレットを接続",
+    "connectWalletDescription": "ウォレットをリンクしてWeb3機能とAVAX支払いにアクセス",
+    "resetWallet": "ウォレットをリセット",
+    "signOutWeb2": "Web2アカウントからサインアウト",
+    "signOutWeb3": "ウォレットからサインアウト"
   },
   "postman": {
     "layout": {

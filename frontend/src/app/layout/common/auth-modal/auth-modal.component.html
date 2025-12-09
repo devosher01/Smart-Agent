@@ -20,38 +20,41 @@
 
   <!-- CHOICE State -->
   <div *ngIf="state() === 'CHOICE'" class="space-y-3">
-    <button
-      mat-stroked-button
-      class="w-full !h-12 !justify-start !px-4 !rounded-lg !border-slate-300 dark:!border-slate-700"
-      (click)="startEmailFlow()"
-    >
-      <mat-icon class="mr-3 text-slate-500">mail</mat-icon>
-      <span class="text-slate-700 dark:text-slate-300">{{
-        'authModal.choice.continueEmail' | transloco
-      }}</span>
-    </button>
-
-    <button
-      mat-stroked-button
-      class="w-full !h-12 !justify-start !px-4 !rounded-lg !border-slate-300 dark:!border-slate-700"
-      (click)="startPhoneFlow()"
-    >
-      <mat-icon class="mr-3 text-slate-500">smartphone</mat-icon>
-      <span class="text-slate-700 dark:text-slate-300">{{
-        'authModal.choice.continueSMS' | transloco
-      }}</span>
-    </button>
-
-    <div class="relative py-2">
-      <div class="absolute inset-0 flex items-center">
-        <div class="w-full border-t border-slate-200 dark:border-slate-700"></div>
-      </div>
-      <div class="relative flex justify-center text-xs uppercase">
-        <span class="bg-white dark:bg-slate-800 px-2 text-slate-500">{{
-          'authModal.choice.or' | transloco
+    <!-- Only show email/SMS options if user doesn't have Web2 auth -->
+    <ng-container *ngIf="!hasWeb2Auth()">
+      <button
+        mat-stroked-button
+        class="w-full !h-12 !justify-start !px-4 !rounded-lg !border-slate-300 dark:!border-slate-700"
+        (click)="startEmailFlow()"
+      >
+        <mat-icon class="mr-3 text-slate-500">mail</mat-icon>
+        <span class="text-slate-700 dark:text-slate-300">{{
+          'authModal.choice.continueEmail' | transloco
         }}</span>
+      </button>
+
+      <button
+        mat-stroked-button
+        class="w-full !h-12 !justify-start !px-4 !rounded-lg !border-slate-300 dark:!border-slate-700"
+        (click)="startPhoneFlow()"
+      >
+        <mat-icon class="mr-3 text-slate-500">smartphone</mat-icon>
+        <span class="text-slate-700 dark:text-slate-300">{{
+          'authModal.choice.continueSMS' | transloco
+        }}</span>
+      </button>
+
+      <div class="relative py-2">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-slate-200 dark:border-slate-700"></div>
+        </div>
+        <div class="relative flex justify-center text-xs uppercase">
+          <span class="bg-white dark:bg-slate-800 px-2 text-slate-500">{{
+            'authModal.choice.or' | transloco
+          }}</span>
+        </div>
       </div>
-    </div>
+    </ng-container>
 
     <!-- Wallet Option -->
     <ng-container *ngIf="!connectedWalletAddress(); else connectedWallet">
@@ -90,7 +93,8 @@
       </div>
     </ng-template>
 
-    <div class="pt-4 text-center">
+    <!-- Only show sign up prompt if user doesn't have Web2 auth -->
+    <div *ngIf="!hasWeb2Auth()" class="pt-4 text-center">
       <span class="text-sm text-slate-500">{{ 'authModal.choice.noAccount' | transloco }}</span>
       <a
         class="text-sm text-blue-600 font-semibold ml-1 cursor-pointer hover:underline"
@@ -345,7 +349,7 @@
       </button>
     </div>
 
-    <button mat-button class="w-full" (click)="setState('CHOICE')">
+    <button mat-button class="w-full" (click)="handleWalletBack()">
       {{ 'authModal.walletConnect.back' | transloco }}
     </button>
   </div>

@@ -31,7 +31,9 @@
         <span class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">{{
           user.credits || '0.00' | number: '1.2-4'
         }}</span>
-        <span class="text-[9px] font-bold text-slate-400 mt-[1px]">{{ 'userMenu.creditsLabel' | transloco }}</span>
+        <span class="text-[9px] font-bold text-slate-400 mt-[1px]">{{
+          'userMenu.creditsLabel' | transloco
+        }}</span>
 
         @if (avaxBalance) {
           <div class="h-2 w-px bg-slate-300 dark:bg-slate-600 mx-1"></div>
@@ -47,67 +49,120 @@
 
 <mat-menu [xPosition]="'before'" #userActions="matMenu" class="user-menu-panel">
   <div class="px-4 py-4 min-w-[280px]">
-    <!-- User Info Section -->
-    <div class="flex items-start gap-3 pb-4 border-b border-slate-100 dark:border-slate-700">
-      <!-- Avatar -->
-      <div
-        class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-md"
-      >
-        <span class="text-white font-bold text-lg">
-          {{ (user?.name || 'U').charAt(0).toUpperCase() }}
-        </span>
+    <!-- User Info Section (Web2 Account) -->
+    @if (hasWeb2Auth) {
+      <div class="pb-4 border-b border-slate-100 dark:border-slate-700">
+        <div class="flex items-start gap-3 mb-3">
+          <!-- Avatar -->
+          <div
+            class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-md"
+          >
+            <span class="text-white font-bold text-lg">
+              {{ (user?.name || 'U').charAt(0).toUpperCase() }}
+            </span>
+          </div>
+
+          <!-- User Details -->
+          <div class="flex-1 min-w-0">
+            <h3 class="text-sm font-semibold text-slate-900 dark:text-white truncate">
+              {{ user?.name || '—' }}
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+              {{ user?.email || '—' }}
+            </p>
+
+            <!-- Credits Badge -->
+            <div
+              class="inline-flex items-center gap-1.5 mt-2 px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 rounded-md"
+            >
+              <svg
+                class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                {{ user?.credits || '0.00' | number: '1.2-4' }}
+              </span>
+              <span
+                class="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide"
+              >
+                {{ 'userMenu.credits' | transloco }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sign Out Web2 Button (only show if hybrid or Web2-only) -->
+        @if (isHybrid || isWeb2Only) {
+          <button
+            (click)="signOutWeb2()"
+            class="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors group"
+          >
+            <svg
+              class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+              />
+            </svg>
+            <span>{{ 'userMenu.signOutWeb2' | transloco }}</span>
+          </button>
+        }
       </div>
-
-      <!-- User Details -->
-      <div class="flex-1 min-w-0">
-        <h3 class="text-sm font-semibold text-slate-900 dark:text-white truncate">
-          {{ user?.name || '—' }}
-        </h3>
-        <p class="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-          {{ user?.email || '—' }}
-        </p>
-
-        <!-- Credits Badge -->
-        <div
-          class="inline-flex items-center gap-1.5 mt-2 px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 rounded-md"
-        >
-          <svg
-            class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+    } @else if (isWeb3Only) {
+      <!-- Web3-only: Show user info without logout button (logout is in wallet section) -->
+      <div class="pb-4 border-b border-slate-100 dark:border-slate-700">
+        <div class="flex items-start gap-3">
+          <!-- Avatar -->
+          <div
+            class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-md"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400">
-            {{ user?.credits || '0.00' | number: '1.2-4' }}
-          </span>
-          <span
-            class="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide"
-          >
-            {{ 'userMenu.credits' | transloco }}
-          </span>
+            <span class="text-white font-bold text-lg">
+              {{ (user?.name || 'U').charAt(0).toUpperCase() }}
+            </span>
+          </div>
+
+          <!-- User Details -->
+          <div class="flex-1 min-w-0">
+            <h3 class="text-sm font-semibold text-slate-900 dark:text-white truncate">
+              {{ user?.name || '—' }}
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+              {{ user?.email || '—' }}
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+    }
 
-    <!-- Agent Wallet Section -->
+    <!-- Agent Wallet Section (Web3 Account) -->
     @if (walletAddress) {
       <div class="py-3 border-b border-slate-100 dark:border-slate-700">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs font-medium text-slate-500 dark:text-slate-400">{{ 'userMenu.agentWallet' | transloco }}</span>
+          <span class="text-xs font-medium text-slate-500 dark:text-slate-400">{{
+            'userMenu.agentWallet' | transloco
+          }}</span>
           <span
             class="text-[10px] px-1.5 py-0.5 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-full font-medium"
             >{{ 'userMenu.active' | transloco }}</span
           >
         </div>
         <div
-          class="bg-slate-50 dark:bg-slate-800 rounded-lg p-2.5 border border-slate-100 dark:border-slate-700"
+          class="bg-slate-50 dark:bg-slate-800 rounded-lg p-2.5 border border-slate-100 dark:border-slate-700 mb-3"
         >
           <div class="flex items-center justify-between mb-1">
             <span
@@ -129,6 +184,31 @@
             <span class="text-xs font-medium text-slate-400">AVAX</span>
           </div>
         </div>
+
+        <!-- Sign Out Web3 Button (only show if hybrid or Web3-only) -->
+        @if (isHybrid || isWeb3Only) {
+          <button
+            (click)="signOutWeb3()"
+            class="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors group"
+          >
+            <svg
+              class="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-300"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            <span>{{
+              isHybrid ? ('userMenu.signOutWeb3' | transloco) : ('userMenu.resetWallet' | transloco)
+            }}</span>
+          </button>
+        }
       </div>
     }
 
@@ -171,48 +251,27 @@
       </div>
     }
 
-    <!-- Sign Out / Reset Wallet Button -->
-    <div class="pt-3">
-      <button
-        (click)="signOut()"
-        class="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors group"
-      >
-        <!-- Web3-only: Reset Wallet icon -->
-        <svg
-          *ngIf="isWeb3Only"
-          class="w-4 h-4 group-hover:rotate-180 transition-transform duration-300"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+    <!-- Connect Wallet Button (Web2-only users) -->
+    @if (isWeb2Only) {
+      <div class="py-3 border-b border-slate-100 dark:border-slate-700">
+        <button
+          (click)="openAuthModal(true)"
+          class="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 rounded-lg transition-colors group"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-          />
-        </svg>
-
-        <!-- Web2/Hybrid: Sign Out icon -->
-        <svg
-          *ngIf="!isWeb3Only"
-          class="w-4 h-4 group-hover:translate-x-0.5 transition-transform"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-          />
-        </svg>
-
-        <!-- Dynamic text based on auth type -->
-        <span *ngIf="isWeb3Only">{{ 'userMenu.resetWallet' | transloco }}</span>
-        <span *ngIf="!isWeb3Only">{{ 'userMenu.signOut' | transloco }}</span>
-      </button>
-    </div>
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
+            />
+          </svg>
+          <span>{{ 'userMenu.connectWallet' | transloco }}</span>
+        </button>
+        <p class="text-[10px] text-slate-400 dark:text-slate-500 text-center mt-2">
+          {{ 'userMenu.connectWalletDescription' | transloco }}
+        </p>
+      </div>
+    }
   </div>
 </mat-menu>

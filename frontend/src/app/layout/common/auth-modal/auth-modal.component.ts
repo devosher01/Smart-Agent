@@ -13,7 +13,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
+import { MatDialogRef, MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { environment } from 'environments/environment';
@@ -78,6 +78,7 @@ export class AuthModalComponent {
 
   // Existing auth state
   connectedWalletAddress = signal<string | null>(null);
+  hasWeb2Auth = signal(false); // Track if user already has Web2 authentication
 
   // Country selection
   selectedCountry = signal<CountryDialCode | null>(null);
@@ -97,6 +98,7 @@ export class AuthModalComponent {
   private _router = inject(Router);
   private _countryService = inject(CountryService);
   private _encryptionService = inject(WalletEncryptionService);
+  private _dialogData = inject<{ startWithWallet?: boolean }>(MAT_DIALOG_DATA, { optional: true });
 
   projectId = environment.projectId;
   projectFlowId = environment.loginProjectFlowId;
@@ -119,6 +121,27 @@ export class AuthModalComponent {
     const existingAddress = localStorage.getItem('x402_agent_address');
     if (existingAddress) {
       this.connectedWalletAddress.set(existingAddress);
+    }
+
+    // Check if user already has Web2 authentication
+    const storedUser = localStorage.getItem('verifik_account');
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        if (userData && (userData.id || userData._id)) {
+          this.hasWeb2Auth.set(true);
+        }
+      } catch (error) {
+        console.warn('Failed to parse stored user data', error);
+      }
+    }
+
+    // If dialog was opened with startWithWallet flag, go directly to wallet flow
+    if (this._dialogData?.startWithWallet) {
+      // Use setTimeout to ensure the component is fully initialized
+      setTimeout(() => {
+        this.startWalletFlow();
+      }, 0);
     }
   }
 
@@ -382,6 +405,20 @@ export class AuthModalComponent {
   // --- Wallet Flow ---
   startWalletFlow() {
     this.setState('WALLET_CONNECT');
+  }
+
+  /**
+   * Handle back navigation from wallet connection
+   * If user has Web2 auth, close modal instead of going back to CHOICE
+   */
+  handleWalletBack() {
+    if (this.hasWeb2Auth()) {
+      // User already has Web2 auth, just close the modal
+      this._dialogRef.close();
+    } else {
+      // User doesn't have Web2 auth, go back to choice screen
+      this.setState('CHOICE');
+    }
   }
 
   async createAgentWallet() {
