@@ -14,7 +14,11 @@
     "active": "活跃",
     "connectWeb2Account": "连接Web2账户",
     "connectWeb2AccountDescription": "链接您的电子邮件或电话以访问积分",
-    "resetWallet": "重置钱包"
+    "connectWallet": "连接钱包",
+    "connectWalletDescription": "链接钱包以访问Web3功能和AVAX支付",
+    "resetWallet": "重置钱包",
+    "signOutWeb2": "退出Web2账户",
+    "signOutWeb3": "退出钱包"
   },
   "postman": {
     "layout": {
