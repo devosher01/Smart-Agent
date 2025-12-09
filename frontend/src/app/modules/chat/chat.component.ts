@@ -140,6 +140,16 @@ export class ChatComponent implements OnInit {
     await this.refreshBalance();
     await this.loadAgentInfo();
 
+    // Preselect chat mode based on user's authentication state
+    const hasWallet = !!this.walletService.getAddress();
+    const hasCredits = !!localStorage.getItem('accessToken');
+
+    // If user has Web2 auth (credits) but no wallet, preselect credits mode
+    if (hasCredits && !hasWallet) {
+      this.setChatMode('credits');
+    }
+    // Otherwise, default to x402 mode (already set by default)
+
     // Welcome message
     const identity = this.agentInfo()?.identity;
     const welcomeMsg = identity

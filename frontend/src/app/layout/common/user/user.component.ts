@@ -130,11 +130,11 @@ export class UserComponent implements OnInit, OnDestroy {
       if (storedUser) {
         this.user = JSON.parse(storedUser);
         this.hasWeb2Auth = true; // User has Web2 authentication
-        
+
         // Check if wallet also exists (hybrid auth)
         // Note: walletAddress is already fetched in fetchWalletInfo() above
         // This will be set by the time we check isWeb2Only
-        
+
         this._changeDetectorRef.markForCheck();
       } else {
         this.hasWeb2Auth = false; // No Web2 authentication
@@ -225,34 +225,39 @@ export class UserComponent implements OnInit, OnDestroy {
    * Clears Web2 credentials but preserves wallet
    */
   signOutWeb2(): void {
-    this._authService.signOut().subscribe(() => {
-      // Clear Web2 user data
-      this.user = null;
-      this._userService.user = null as any;
-      this.hasWeb2Auth = false;
+    // Clear only Web2-related localStorage items
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('verifik_account');
+    // Note: We don't set accessToken via setter as it would store "null" string
+    // The removeItem above properly removes it from localStorage
 
-      // If user has wallet, create a mock user object for Web3-only display
-      if (this.walletAddress) {
-        const walletType = localStorage.getItem('x402_wallet_type');
-        let walletName = 'Agent Wallet';
-        if (walletType === 'metamask') {
-          walletName = 'MetaMask Wallet';
-        }
+    // Clear Web2 user data
+    this.user = null;
+    this._userService.user = null as any;
+    this.hasWeb2Auth = false;
 
-        this.user = {
-          id: this.walletAddress,
-          name: walletName,
-          email: `${this.walletAddress.substring(0, 6)}...${this.walletAddress.substring(this.walletAddress.length - 4)}`,
-          credits: 0,
-          role: 'agent',
-        };
+    // If user has wallet, create a mock user object for Web3-only display
+    const walletType = localStorage.getItem('x402_wallet_type');
+
+    if (this.walletAddress) {
+      let walletName = 'Agent Wallet';
+      if (walletType === 'metamask') {
+        walletName = 'MetaMask Wallet';
       }
 
-      this._changeDetectorRef.markForCheck();
+      this.user = {
+        id: this.walletAddress,
+        name: walletName,
+        email: `${this.walletAddress.substring(0, 6)}...${this.walletAddress.substring(this.walletAddress.length - 4)}`,
+        credits: 0,
+        role: 'agent',
+      };
+    }
 
-      // Reload to ensure clean state
-      location.reload();
-    });
+    this._changeDetectorRef.markForCheck();
+
+    // Reload to ensure clean state
+    location.reload();
   }
 
   /**

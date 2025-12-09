@@ -18,12 +18,25 @@ export class AuthUtils {
      */
     static isTokenExpired(token: string, offsetSeconds?: number): boolean {
         // Return if there is no token
-        if (!token || token === '') {
+        if (!token || token === '' || token.trim() === '') {
             return true;
         }
 
+        // Check if token looks like a valid JWT (has 3 parts separated by dots)
+        // This prevents errors when trying to decode invalid tokens
+        if (token.split('.').length !== 3) {
+            return true; // Treat invalid format as expired
+        }
+
         // Get the expiration date
-        const date = this._getTokenExpirationDate(token);
+        let date: Date | null = null;
+        try {
+            date = this._getTokenExpirationDate(token);
+        } catch (error) {
+            // If token decoding fails, treat as expired
+            console.warn('Failed to decode token:', error);
+            return true;
+        }
 
         offsetSeconds = offsetSeconds || 0;
 
