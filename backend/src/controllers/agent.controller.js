@@ -5,16 +5,25 @@ const ConversationRepository = require("../repositories/conversation.repository"
  * Handle chat request
  * POST /api/agent/chat
  */
+const fs = require("fs");
+const path = require("path");
+const crypto = require("crypto");
+
+/**
+ * Handle chat request
+ * POST /api/agent/chat
+ */
 const chat = async (ctx) => {
 	try {
-		const { message, conversationId, paymentTx, paymentWallet, paymentAmount, mode, userToken } = ctx.request.body;
+		const { message, conversationId, paymentTx, paymentWallet, paymentAmount, mode, userToken, images } = ctx.request.body;
 
-		if (!message) {
+		if (!message && (!images || images.length === 0)) {
 			ctx.status = 400;
-			ctx.body = { error: "Message is required" };
+			ctx.body = { error: "Message or image is required" };
 			return;
 		}
 
+		// If success, record validation proof on-chain (ERC8004)
 		let conversation = null;
 		let history = [];
 
@@ -25,35 +34,67 @@ const chat = async (ctx) => {
 			}
 		}
 
-		// If no conversation found or provided, start new one later (or logic below handles it)
-		// Actually, we pass history to AgentModule.
-		// AgentModule expects history as ARRAY of {role, content}.
+		// Process Images if any
+		let processedImages = [];
+		if (images && Array.isArray(images)) {
+			processedImages = images
+				.map((imgBase64) => {
+					// imgBase64 might be "data:image/png;base64,..."
+					// We want to extract the base64 part for saving, but might keep full string for Gemini?
+					// Gemini expects base64 string without header in 'inlineData'.
+					const matches = imgBase64.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
 
-		const response = await AgentModule.chatWithAgent(message, history, paymentTx, paymentWallet, paymentAmount, mode, userToken);
+					if (matches && matches.length === 3) {
+						const mimeType = matches[1];
+						const data = matches[2];
+
+						// Save to disk for persistence
+						const filename = `${Date.now()}_${crypto.randomBytes(4).toString("hex")}.${mimeType.split("/")[1]}`;
+						const uploadDir = path.join(__dirname, "../../data/uploads");
+						if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+						fs.writeFileSync(path.join(uploadDir, filename), Buffer.from(data, "base64"));
+
+						return {
+							mimeType,
+							data, // Base64 for Gemini
+							url: `/api/uploads/${filename}`, // For frontend/history
+						};
+					}
+					return null;
+				})
+				.filter((i) => i !== null);
+		}
+
+		const response = await AgentModule.chatWithAgent(
+			message || "Analyzes this image",
+			history,
+			paymentTx,
+			paymentWallet,
+			paymentAmount,
+			mode,
+			userToken,
+			processedImages
+		);
 
 		// Now we persist
 		// 1. User Message
-		const userMsg = { role: "user", content: message };
+		const userMsg = {
+			role: "user",
+			content: message || "", // Ensure content is never undefined
+			images: processedImages.map((img) => img.url), // Store URLs in history, not base64
+		};
 
 		// 2. Assistant Message (response)
-		// response is { role: 'assistant', content: ..., ?tool_call, ?data }
 		const assistantMsg = response;
 
 		if (conversation) {
-			// Append to existing
 			ConversationRepository.appendMessages(conversationId, [userMsg, assistantMsg]);
-
-			// Return both response AND conversationId (just in case)
 			ctx.body = { ...response, conversationId: conversationId };
 		} else {
-			// Create new conversation
-			// Use paymentWallet as owner if available
 			const owner = paymentWallet || (userToken ? "authenticated_user" : null);
-			// Ideally we extract ID from userToken but for now let's rely on wallet or just anonymous if neither.
-
-			conversation = ConversationRepository.create(owner, message);
+			conversation = ConversationRepository.create(owner, message || "Image Analysis");
 			ConversationRepository.appendMessages(conversation.id, [userMsg, assistantMsg]);
-
 			ctx.body = { ...response, conversationId: conversation.id };
 		}
 	} catch (error) {
@@ -170,6 +211,30 @@ const deleteConversation = async (ctx) => {
 	}
 };
 
+/**
+ * POST /api/agent/conversations
+ * Body: { ownerAddress (optional) }
+ */
+const createConversation = async (ctx) => {
+	try {
+		// We can determine owner from token or body
+		// For now, let's accept it from body or infer for simple implementation
+		const { walletAddress, mode } = ctx.request.body;
+		// Logic similar to chat: determine owner
+		let owner = null;
+		// For x402, owner is the wallet address
+		if (mode === "x402" && walletAddress) owner = walletAddress;
+		// For credits, owner is the User ID passed in walletAddress field
+		if (mode === "credits" && walletAddress) owner = walletAddress;
+
+		const conversation = ConversationRepository.create(owner, "");
+		ctx.body = conversation;
+	} catch (error) {
+		ctx.status = 500;
+		ctx.body = { error: error.message };
+	}
+};
+
 module.exports = {
 	chat,
 	getInfo,
@@ -178,4 +243,5 @@ module.exports = {
 	getHistory,
 	updateConversation,
 	deleteConversation,
+	createConversation,
 };

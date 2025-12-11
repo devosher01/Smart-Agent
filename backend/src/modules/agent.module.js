@@ -163,12 +163,16 @@ const chatWithAgent = async (
 	paymentWallet = null,
 	paymentAmount = null,
 	mode = "x402",
-	userToken = null
+	userToken = null,
+	images = []
 ) => {
 	// 1. Construct System Prompt
-	const fullPrompt = constructSystemPrompt(toolsDef.endpoints, history, userMessage, paymentTx);
+	const fullPrompt = constructSystemPrompt(toolsDef.endpoints, history, userMessage, paymentTx, images);
 
-	console.log(`[Agent] Processing message: "${userMessage.substring(0, 50)}..."`);
+	console.log(`[Agent] Processing message: "${userMessage?.substring(0, 50)}..."`);
+	if (images && images.length > 0) {
+		console.log(`[Agent] Processing ${images.length} images`);
+	}
 
 	// 3. Call Gemini
 	try {
@@ -176,10 +180,25 @@ const chatWithAgent = async (
 		const model = DEFAULT_MODEL;
 		const url = `https://generativelanguage.googleapis.com/${API_VERSION}/models/${model}:generateContent`;
 
+		// Construct Parts
+		const parts = [{ text: fullPrompt }];
+
+		// Append images
+		if (images && Array.isArray(images)) {
+			images.forEach((img) => {
+				parts.push({
+					inlineData: {
+						mimeType: img.mimeType,
+						data: img.data,
+					},
+				});
+			});
+		}
+
 		const response = await axios.post(
 			url,
 			{
-				contents: [{ parts: [{ text: fullPrompt }] }],
+				contents: [{ parts: parts }],
 				generationConfig: {
 					temperature: 0.1,
 					maxOutputTokens: 1000,
@@ -409,7 +428,7 @@ const getAgentCard = async () => {
 /**
  * Construct the full system prompt including tools and history
  */
-const constructSystemPrompt = (tools, history, userMessage, paymentTx) => {
+const constructSystemPrompt = (tools, history, userMessage, paymentTx, images = []) => {
 	const systemPrompt = `
     You are an AI Agent capable of validating identities and performing other tasks.
     
@@ -423,6 +442,20 @@ const constructSystemPrompt = (tools, history, userMessage, paymentTx) => {
        IGNORE the "estimatedCost" field in the tool definition. Do not mention it.
        {"tool": "tool_id", "args": { ... }}
     
+    IMAGE PROCESSING INSTRUCTIONS:
+    ${
+		images && images.length > 0
+			? `
+    - You have received ${images.length} image(s). 
+    - Your PRIMARY GOAL is to EXTRACT information from these images to call a validation tool.
+    - Analyze the image to identify the document type (e.g., Colombian Cédula, Passport, Visa, etc.).
+    - Extract the document number and other required fields.
+    - SPECIFIC RULE FOR COLOMBIAN ID (Cédula): If you see a Colombian Cédula, extract the number and IMMEDIATELY call 'colombia_api_identity_lookup' with documentType="CC" and the extracted number.
+    - Do NOT just describe the image. Use the extracted data to call the tool.
+    `
+			: ""
+	}
+
     Output ONLY the JSON object. Do not add conversational text when calling a tool.
     
     Current Context:
@@ -438,6 +471,10 @@ const constructSystemPrompt = (tools, history, userMessage, paymentTx) => {
 	});
 
 	fullPrompt += `User: ${userMessage}\n`;
+
+	if (images && images.length > 0) {
+		fullPrompt += `System: [User has uploaded ${images.length} image(s) for analysis]\n`;
+	}
 
 	if (paymentTx) {
 		fullPrompt += `System: User has completed payment with TX ${paymentTx}. Retry the last tool call.\n`;

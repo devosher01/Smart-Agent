@@ -224,6 +224,21 @@
                   [innerHTML]="msg.content | markdown"
                 ></div>
 
+                <!-- Images -->
+                @if (msg.images && msg.images.length > 0) {
+                  <div class="flex flex-wrap gap-2 mt-3">
+                    @for (imgSrc of msg.images; track $index) {
+                      <img
+                        [src]="getImageUrl(imgSrc)"
+                        class="max-w-[200px] h-auto rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer hover:opacity-90 transition-opacity"
+                        (click)="
+                          $event.stopPropagation(); window.open(getImageUrl(imgSrc), '_blank')
+                        "
+                      />
+                    }
+                  </div>
+                }
+
                 <!-- Payment Request -->
                 @if (msg.payment_required) {
                   <div
@@ -332,20 +347,77 @@
     <div
       class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shrink-0 z-10"
     >
+      <!-- Attachment Previews -->
+      @if (pendingAttachments().length > 0) {
+        <div class="max-w-4xl mx-auto mb-3 pl-12">
+          <div class="flex gap-3 overflow-x-auto pb-2">
+            @for (img of pendingAttachments(); track $index) {
+              <div
+                class="relative group w-20 h-20 shrink-0 cursor-zoom-in"
+                (click)="openImagePreview(img)"
+              >
+                <img
+                  [src]="img"
+                  class="w-full h-full object-cover rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm"
+                />
+                <button
+                  (click)="$event.stopPropagation(); removeAttachment($index)"
+                  class="absolute top-1 right-1 w-6 h-6 bg-black/50 hover:bg-red-500 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition-colors shadow-sm"
+                >
+                  <mat-icon class="!w-4 !h-4 !text-[14px] flex items-center justify-center"
+                    >close</mat-icon
+                  >
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
       <div class="max-w-4xl mx-auto flex gap-3 items-center relative">
+        <!-- File Input (Hidden) -->
+        <input
+          type="file"
+          #fileInput
+          hidden
+          multiple
+          accept="image/*"
+          (change)="onFileSelected($event)"
+        />
+
+        <!-- Attach Button -->
+        <button
+          mat-icon-button
+          (click)="fileInput.click()"
+          class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+          matTooltip="Attach image"
+        >
+          <mat-icon>attach_file</mat-icon>
+        </button>
+
         <input
           [(ngModel)]="userInput"
           (keyup.enter)="sendMessage()"
+          (paste)="onPaste($event)"
           type="text"
           [placeholder]="'chat.inputPlaceholder' | transloco"
-          class="flex-1 h-12 pl-4 pr-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400 shadow-sm"
+          class="flex-1 h-12 pl-4 pr-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none transition-all placeholder:text-slate-400 shadow-sm"
         />
+
         <button
           (click)="sendMessage()"
-          [disabled]="isLoading() || !userInput().trim()"
-          class="absolute right-2 top-2 h-8 w-8 flex items-center justify-center rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:bg-slate-300 transition-all shadow-sm"
+          [disabled]="isLoading() || (!userInput().trim() && pendingAttachments().length === 0)"
+          class="absolute right-2 top-2 h-8 w-8 flex items-center justify-center rounded-lg bg-slate-900 text-white hover:bg-slate-700 disabled:opacity-50 disabled:bg-slate-200 disabled:text-slate-400 transition-all shadow-md"
         >
-          <mat-icon class="!w-4 !h-4 !text-[16px]">arrow_upward</mat-icon>
+          @if (isLoading()) {
+            <mat-progress-spinner
+              mode="indeterminate"
+              diameter="16"
+              color="accent"
+            ></mat-progress-spinner>
+          } @else {
+            <mat-icon class="!w-4 !h-4 !text-[16px]">arrow_upward</mat-icon>
+          }
         </button>
       </div>
       <div class="text-center mt-2 text-[10px] text-slate-400">
@@ -355,6 +427,27 @@
   </main>
 
   <!-- Modals (Overlaying the whole Layout) -->
+
+  <!-- Image Preview Modal -->
+  @if (previewImage()) {
+    <div
+      class="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-fadeIn"
+      (click)="closeImagePreview()"
+    >
+      <button
+        class="absolute top-4 right-4 text-white/70 hover:text-white transition-colors"
+        (click)="closeImagePreview()"
+      >
+        <mat-icon class="!w-8 !h-8 !text-[32px]">close</mat-icon>
+      </button>
+
+      <img
+        [src]="previewImage()"
+        class="max-w-full max-h-[90vh] rounded-lg shadow-2xl animate-scaleIn object-contain"
+        (click)="$event.stopPropagation()"
+      />
+    </div>
+  }
 
   <!-- Agent Info Modal -->
   @if (showAgentInfoModal()) {

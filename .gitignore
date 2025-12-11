@@ -64,3 +64,5 @@ Thumbs.db
 # Sensitive Config Files (Backend)
 backend/src/config/gemini_key.json
 backend/src/config/google_key.json
+# Runtime Data
+backend/data/

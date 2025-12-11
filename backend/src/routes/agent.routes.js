@@ -9,6 +9,7 @@ module.exports = (router) => {
 
 	// Conversation Management
 	router.get(`${PATH}/conversations`, Controller.listConversations);
+	router.post(`${PATH}/conversations`, Controller.createConversation);
 	router.get(`${PATH}/history/:conversationId`, Controller.getHistory);
 	router.patch(`${PATH}/conversations/:conversationId`, Controller.updateConversation);
 	router.delete(`${PATH}/conversations/:conversationId`, Controller.deleteConversation);

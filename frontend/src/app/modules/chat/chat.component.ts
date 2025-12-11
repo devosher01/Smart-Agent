@@ -41,6 +41,7 @@ interface ChatMessage {
   payment_required?: PaymentRequired;
   data?: any;
   proof?: string;
+  images?: string[];
 }
 
 interface ConversationSummary {
@@ -100,9 +101,11 @@ interface AgentInfo {
   styleUrl: './chat.component.scss',
 })
 export class ChatComponent implements OnInit {
+  protected readonly window = window; // Expose window for template
   @ViewChild('scrollContainer') private scrollContainer!: ElementRef;
 
   baseUrl = environment.baseUrl;
+  protected readonly smartAgentUrl = environment.smartAgentUrl;
   private apiUrl = `${environment.smartAgentUrl}/api/agent`;
 
   // --- Signals ---
@@ -158,14 +161,34 @@ export class ChatComponent implements OnInit {
 
     // Load initial data
     this.loadAgentInfo();
-    this.loadConversations();
+    // this.loadConversations(); // MOVED BELOW to ensure mode is set
 
-    // Determine Mode
+    // Determine Mode Smartly based on Balances
     const hasWallet = !!this.walletService.getAddress();
     const hasCredits = !!localStorage.getItem('accessToken');
+    const walletBalance = parseFloat(this.walletBalance() || '0');
+
+    // Logic:
+    // 1. If has credits but no wallet -> Credits
+    // 2. If has wallet but no credits -> x402
+    // 3. If has both:
+    //    - If wallet empty (< 0.01 AVAX) -> Credits
+    //    - Else -> x402 (Default)
+
     if (hasCredits && !hasWallet) {
       this.setChatMode('credits');
+    } else if (hasWallet && hasCredits) {
+      if (walletBalance < 0.01) {
+        this.setChatMode('credits');
+      } else {
+        this.setChatMode('x402');
+      }
+    } else if (hasWallet) {
+      this.setChatMode('x402');
     }
+
+    // Now load conversations with correct mode/wallet
+    this.loadConversations();
 
     // Restore Session
     const savedId = localStorage.getItem('currentConversationId');
@@ -180,8 +203,13 @@ export class ChatComponent implements OnInit {
 
   loadConversations() {
     const params: any = {};
-    if (this.walletAddress()) {
+
+    // Strictly filter based on ACTIVE MODE to match creation logic
+    if (this.chatMode() === 'x402' && this.walletAddress()) {
       params.walletAddress = this.walletAddress();
+    } else if (this.chatMode() === 'credits') {
+      // Use User ID as identifier
+      params.walletAddress = this.getUserId();
     }
 
     this.http.get<ConversationSummary[]>(`${this.apiUrl}/conversations`, { params }).subscribe({
@@ -215,7 +243,14 @@ export class ChatComponent implements OnInit {
     if (clearStorage) {
       localStorage.removeItem('currentConversationId');
     }
+
+    // Reset UI State immediately
     this.currentConversationId.set(null);
+    this.userInput.set('');
+    this.pendingAttachments.set([]);
+    this.thinkingSteps.set([]);
+    this.currentThinkingStep.set('');
+    this.isLoading.set(false);
     this.messages.set([]);
 
     // Welcome message
@@ -224,7 +259,26 @@ export class ChatComponent implements OnInit {
       ? `Hello! I am ${identity.name}. ${identity.description} How can I assist you today?`
       : 'Hello! I am your Verifik AI Agent powered by Gemini. I can help you validate identities using the x402 protocol on Avalanche. How can I assist you today?';
 
+    // We show welcome message temporarily.
     this.messages.set([{ role: 'assistant', content: welcomeMsg }]);
+
+    // Persist immediately if this is a user action (clearStorage usually implies reset/new)
+    if (clearStorage) {
+      const payload = {
+        mode: this.chatMode(),
+        walletAddress: this.chatMode() === 'credits' ? this.getUserId() : this.walletAddress(),
+      };
+      this.http.post<any>(`${this.apiUrl}/conversations`, payload).subscribe({
+        next: (conv) => {
+          // Set the new ID
+          this.currentConversationId.set(conv.id);
+          localStorage.setItem('currentConversationId', conv.id);
+          // Refresh list so it appears in sidebar
+          this.loadConversations();
+        },
+        error: (err) => console.error('Failed to create new chat', err),
+      });
+    }
   }
 
   startRenaming(conv: ConversationSummary, event: Event) {
@@ -310,9 +364,53 @@ export class ChatComponent implements OnInit {
     this.chatMode.set(mode);
   }
 
+  // Image Attachments
+  pendingAttachments = signal<string[]>([]); // Base64 strings
+
+  async onPaste(event: ClipboardEvent) {
+    const items = event.clipboardData?.items;
+    if (items) {
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const blob = items[i].getAsFile();
+          if (blob) {
+            const base64 = await this.fileToBase64(blob);
+            this.pendingAttachments.update((current) => [...current, base64]);
+          }
+        }
+      }
+    }
+  }
+
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files) {
+      Array.from(input.files).forEach(async (file) => {
+        const base64 = await this.fileToBase64(file);
+        this.pendingAttachments.update((current) => [...current, base64]);
+      });
+    }
+    input.value = ''; // Reset input
+  }
+
+  removeAttachment(index: number) {
+    this.pendingAttachments.update((current) => current.filter((_, i) => i !== index));
+  }
+
+  private fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  }
+
   async sendMessage() {
     const input = this.userInput();
-    if (!input.trim()) return;
+    const images = this.pendingAttachments();
+
+    if (!input.trim() && images.length === 0) return;
 
     // Check Auth
     const isCredits = this.chatMode() === 'credits';
@@ -332,15 +430,29 @@ export class ChatComponent implements OnInit {
       return;
     }
 
-    this.messages.update((msgs) => [...msgs, { role: 'user', content: input }]);
+    // Creating a message object to display immediately
+    const userMsg: ChatMessage = {
+      role: 'user',
+      content: input,
+      // For display, we might want to show images?
+      // Since backend returns URLs later, for now let's show them as data imgs if we wanted.
+      // But preserving current structure, we'll wait for backend response or just not show images in USER bubble immediately
+      // unless we extend ChatMessage interface.
+      // Let's extend ChatMessage interface first? Added `images?: string[]` to interface below.
+      images: images,
+    };
+
+    this.messages.update((msgs) => [...msgs, userMsg]);
+
     this.userInput.set('');
+    this.pendingAttachments.set([]); // Clear attachments
     this.isLoading.set(true);
     this.scrollToBottom();
 
     this.startThinkingSimulation();
 
     try {
-      await this.callAgent(input);
+      await this.callAgent(input, null, null, images);
     } catch (error: any) {
       this.handleError(error);
     }
@@ -350,26 +462,20 @@ export class ChatComponent implements OnInit {
     message: string,
     paymentTx: string | null = null,
     paymentAmount: string | null = null,
+    images: string[] = [],
   ) {
     const isCredits = this.chatMode() === 'credits';
     const userToken = isCredits ? localStorage.getItem('accessToken') : null;
 
     const payload = {
       message: message,
-      // history: this.messages().map((m) => ({ role: m.role, content: m.content })),
-      // Backend now manages history via conversationId. We just send conversationId.
-      // BUT backend controller says "if conversationId, append". It passes history to AgentModule.
-      // We don't strictly need to send full history from frontend anymore if backend has it.
-      // HOWEVER, for robustness, if we are starting a new chat, we have no ID yet.
-      // And backend logic in plan was to load from repo if ID exists.
-
       conversationId: this.currentConversationId(),
-
       paymentTx: isCredits ? null : paymentTx,
-      paymentWallet: isCredits ? null : this.walletAddress(),
+      paymentWallet: isCredits ? this.getUserId() : this.walletAddress(),
       paymentAmount: isCredits ? null : paymentAmount,
       mode: this.chatMode(),
       userToken: userToken,
+      images: images,
     };
 
     this.http.post<any>(`${this.apiUrl}/chat`, payload).subscribe({
@@ -378,16 +484,12 @@ export class ChatComponent implements OnInit {
         this.thinkingSteps.set([]);
         this.currentThinkingStep.set('');
 
-        // Response contains conversationId if we started a new one
         if (response.conversationId && !this.currentConversationId()) {
           this.currentConversationId.set(response.conversationId);
           localStorage.setItem('currentConversationId', response.conversationId);
-          // Refresh list to show new chat
           this.loadConversations();
         }
 
-        // Response is { role, content, ... } OR { ...response, conversationId }
-        // We only push the message part
         const msg: ChatMessage = {
           role: response.role,
           content: response.content,
@@ -395,13 +497,13 @@ export class ChatComponent implements OnInit {
           payment_required: response.payment_required,
           data: response.data,
           proof: response.proof,
+          images: response.images, // Backend should return image URLs if any were processed/saved
         };
 
         this.messages.update((msgs) => [...msgs, msg]);
         this.scrollToBottom();
 
         if (msg.data && msg.role === 'assistant') {
-          // Check for TX in system messages (if any) - logic preserved
           const paymentMsg = this.messages().find(
             (m) => m.role === 'system' && m.content.includes('TX:'),
           );
@@ -520,6 +622,40 @@ export class ChatComponent implements OnInit {
   refreshBalance() {
     this.walletService.getBalance().then((b) => this.walletBalance.set(b));
   }
+  getImageUrl(src: string): string {
+    if (!src) return '';
+    if (src.startsWith('http') || src.startsWith('data:')) {
+      return src;
+    }
+    if (src.startsWith('/api')) {
+      return `${this.smartAgentUrl}${src}`;
+    }
+    return `${this.baseUrl}${src}`;
+  }
+
+  getUserId(): string {
+    // Try to get from verifik_account (User Profile) first
+    try {
+      const accountStr = localStorage.getItem('verifik_account');
+      if (accountStr) {
+        const account = JSON.parse(accountStr);
+        if (account && account._id) return account._id;
+      }
+    } catch (e) {
+      console.warn('Failed to parse verifik_account from local storage');
+    }
+
+    // Fallback to token
+    const token = localStorage.getItem('accessToken');
+    if (!token) return '';
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.clientId || payload._id || payload.id || payload.sub || 'authenticated_user';
+    } catch (e) {
+      console.error('Failed to parse token', e);
+      return 'authenticated_user';
+    }
+  }
 
   togglePaymentDetails() {
     this.showPaymentDetails.update((v) => !v);
@@ -597,6 +733,17 @@ export class ChatComponent implements OnInit {
     QRCode.toDataURL(address, { width: 200, margin: 1 }, (err, url) => {
       if (!err) this.walletQrCode.set(url);
     });
+  }
+
+  // Image Preview Modal
+  previewImage = signal<string | null>(null);
+
+  openImagePreview(image: string) {
+    this.previewImage.set(image);
+  }
+
+  closeImagePreview() {
+    this.previewImage.set(null);
   }
 
   async copyAddress() {
