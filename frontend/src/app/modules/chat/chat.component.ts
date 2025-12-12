@@ -718,6 +718,9 @@ export class ChatComponent implements OnInit {
         }),
       );
 
+      this.isLoading.set(true);
+      this.startThinkingSimulation();
+
       await this.callAgent('Payment complete. Please proceed.', tx.hash, amount);
       await this.refreshBalance();
     } catch (error: any) {

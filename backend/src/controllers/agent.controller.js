@@ -78,23 +78,35 @@ const chat = async (ctx) => {
 		);
 
 		// Now we persist
-		// 1. User Message
+		// 1. System Message (Payment Confirmation) - if paymentTx exists
+		let messagesToSave = [];
+
+		if (paymentTx) {
+			messagesToSave.push({
+				role: "system",
+				content: `Payment sent! TX: ${paymentTx}. Confirmed.`,
+			});
+		}
+
+		// 2. User Message
 		const userMsg = {
 			role: "user",
 			content: message || "", // Ensure content is never undefined
 			images: processedImages.map((img) => img.url), // Store URLs in history, not base64
 		};
+		messagesToSave.push(userMsg);
 
-		// 2. Assistant Message (response)
+		// 3. Assistant Message (response)
 		const assistantMsg = response;
+		messagesToSave.push(assistantMsg);
 
 		if (conversation) {
-			ConversationRepository.appendMessages(conversationId, [userMsg, assistantMsg]);
+			ConversationRepository.appendMessages(conversationId, messagesToSave);
 			ctx.body = { ...response, conversationId: conversationId };
 		} else {
 			const owner = paymentWallet || (userToken ? "authenticated_user" : null);
 			conversation = ConversationRepository.create(owner, message || "Image Analysis");
-			ConversationRepository.appendMessages(conversation.id, [userMsg, assistantMsg]);
+			ConversationRepository.appendMessages(conversation.id, messagesToSave);
 			ctx.body = { ...response, conversationId: conversation.id };
 		}
 	} catch (error) {
