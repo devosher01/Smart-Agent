@@ -14,6 +14,7 @@ import { TranslocoModule } from '@jsverse/transloco';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { AuthModalComponent } from '../../layout/common/auth-modal/auth-modal.component';
 import { MarkdownPipe } from '../../shared/pipes/markdown.pipe';
+import { AgentFeedbackComponent } from './agent-feedback/agent-feedback.component';
 
 // --- Interfaces ---
 interface ToolCall {
@@ -126,17 +127,11 @@ export class ChatComponent implements OnInit {
   agentCardUrl = `${this.apiUrl}/agent-card.json`;
 
   // Feedback & Payment
-  showFeedbackModal = signal(false);
-  isSubmittingFeedback = signal(false);
   showPaymentConfirmationModal = signal(false);
   pendingPayment = signal<any>(null);
   isProcessingPayment = signal(false);
   showPaymentDetails = signal(false);
-  feedbackRating = signal(0);
-  feedbackTags = signal<string[]>([]);
-  feedbackComment = signal('');
   lastPaymentTx = signal<string | null>(null);
-  availableTags = ['fast', 'accurate', 'helpful', 'reliable', 'easy-to-use'];
 
   // Thinking Simulation
   thinkingSteps = signal<string[]>([]);
@@ -550,75 +545,66 @@ export class ChatComponent implements OnInit {
     }, 800);
   }
 
-  toggleFeedbackModal() {
-    this.showFeedbackModal.update((show) => !show);
-    if (!this.showFeedbackModal()) {
-      this.feedbackRating.set(0);
-      this.feedbackTags.set([]);
-      this.feedbackComment.set('');
-    }
-  }
+  openFeedbackModal() {
+    const dialogRef = this._matDialog.open(AgentFeedbackComponent, {
+      panelClass: 'agent-feedback-dialog',
+      backdropClass: 'backdrop-blur-sm',
+      data: {
+        agentTokenId: 1,
+        paymentTxHash: this.lastPaymentTx(),
+      },
+    });
 
-  setRating(rating: number) {
-    this.feedbackRating.set(rating);
-  }
+    dialogRef.afterClosed().subscribe(async (result) => {
+      if (result && result.success) {
+        // Show "transaction sent" message
+        this.messages.update((msgs) => [
+          ...msgs,
+          {
+            role: 'system',
+            content: `Feedback submitted! Transaction: ${result.txHash}. Waiting for confirmation...`,
+          },
+        ]);
+        this.scrollToBottom();
 
-  toggleTag(tag: string) {
-    const currentTags = this.feedbackTags();
-    if (currentTags.includes(tag)) {
-      this.feedbackTags.set(currentTags.filter((t) => t !== tag));
-    } else {
-      this.feedbackTags.set([...currentTags, tag]);
-    }
-  }
+        // Wait for transaction confirmation
+        try {
+          await result.tx.wait();
 
-  async submitFeedback() {
-    // Re-implementation of submitFeedback (kept from original)
-    const rating = this.feedbackRating();
-    if (rating < 1 || rating > 5) {
-      alert('Please select a rating (1-5 stars)');
-      return;
-    }
+          // Update the existing message to show success (removes "Waiting" triggering the card update)
+          this.messages.update((msgs) => {
+            return msgs.map((msg) => {
+              if (
+                msg.role === 'system' &&
+                msg.content.includes(result.txHash) &&
+                msg.content.includes('Waiting')
+              ) {
+                return {
+                  ...msg,
+                  content: `Feedback submitted! Transaction: ${result.txHash}. Validated.`,
+                };
+              }
+              return msg;
+            });
+          });
 
-    const agentTokenId = 1;
-    const tags = this.feedbackTags();
-    const comment = this.feedbackComment();
-    const paymentTxHash = this.lastPaymentTx();
-
-    this.isSubmittingFeedback.set(true);
-
-    try {
-      const tx = await this.walletService.submitFeedback(
-        agentTokenId,
-        rating,
-        tags,
-        comment,
-        paymentTxHash,
-      );
-      this.messages.update((msgs) => [
-        ...msgs,
-        {
-          role: 'system',
-          content: `Feedback submitted! Transaction: ${tx.hash}. Waiting for confirmation...`,
-        },
-      ]);
-      await tx.wait();
-      this.messages.update((msgs) => [
-        ...msgs,
-        {
-          role: 'system',
-          content: `✅ Thank you for your feedback! Your rating has been recorded on-chain.`,
-        },
-      ]);
-      await this.loadAgentInfo();
-      this.toggleFeedbackModal();
-      this.scrollToBottom();
-    } catch (error: any) {
-      console.error('Error submitting feedback:', error);
-      this.handleError(error);
-    } finally {
-      this.isSubmittingFeedback.set(false);
-    }
+          this.scrollToBottom();
+          await this.loadAgentInfo();
+        } catch (error) {
+          console.error('Transaction confirmation error:', error);
+          this.messages.update((msgs) => [
+            ...msgs,
+            {
+              role: 'system',
+              content: `⚠️ Transaction was sent but confirmation failed. Please check the explorer.`,
+            },
+          ]);
+          this.scrollToBottom();
+        }
+      } else if (result && result.error) {
+        this.handleError(result.error);
+      }
+    });
   }
 
   refreshBalance() {
@@ -782,5 +768,15 @@ export class ChatComponent implements OnInit {
           this.scrollContainer.nativeElement.scrollHeight;
       }
     }, 100);
+  }
+
+  /**
+   * Helper to extract transaction hash from a string.
+   * Used in the template to avoid inline Regex which Angular parser rejects.
+   */
+  extractTxHash(content: string): string | null {
+    if (!content) return null;
+    const match = content.match(/Transaction: (0x[a-fA-F0-9]+)/);
+    return match ? match[1] : null;
   }
 }
