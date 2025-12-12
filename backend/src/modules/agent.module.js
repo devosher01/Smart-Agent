@@ -202,6 +202,7 @@ const chatWithAgent = async (
 				generationConfig: {
 					temperature: 0.1,
 					maxOutputTokens: 1000,
+					stopSequences: ["User:", "System:"],
 				},
 			},
 			{
@@ -467,7 +468,8 @@ const constructSystemPrompt = (tools, history, userMessage, paymentTx, images = 
 	// Add max last 10 messages to avoid token limit overflow, but keep context
 	const recentHistory = history.slice(-10);
 	recentHistory.forEach((msg) => {
-		fullPrompt += `${msg.role}: ${msg.content}\n`;
+		const role = msg.role === "user" ? "User" : "Agent";
+		fullPrompt += `${role}: ${msg.content}\n`;
 	});
 
 	fullPrompt += `User: ${userMessage}\n`;

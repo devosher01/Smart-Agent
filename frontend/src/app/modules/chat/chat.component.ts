@@ -362,6 +362,8 @@ export class ChatComponent implements OnInit {
 
   setChatMode(mode: 'x402' | 'credits') {
     this.chatMode.set(mode);
+
+    this.refreshBalance();
   }
 
   // Image Attachments
