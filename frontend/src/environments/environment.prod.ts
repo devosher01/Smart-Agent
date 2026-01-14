@@ -1,7 +1,7 @@
 export const environment = {
   production: true,
   baseUrl: 'https://staging-api.verifik.co',
-  smartAgentUrl: 'https://x402-agent.verifik.co',
+  smartAgentUrl: 'https://serene-heart-production.up.railway.app',
   apiUrl: 'https://staging-api.verifik.co',
   appUrl: 'https://staging-api.verifik.co',
   projectId: '6266193db77ccc8111730c90',
