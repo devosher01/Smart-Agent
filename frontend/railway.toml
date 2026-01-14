@@ -4,6 +4,6 @@ buildCommand = "npm run build"
 watchPatterns = ["/frontend/**"]
 
 [deploy]
-startCommand = "npm run serve"
+startCommand = "npm start"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
