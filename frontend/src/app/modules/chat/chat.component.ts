@@ -39,13 +39,14 @@ interface PaymentRequired {
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
+  response_type?: 'documentation' | 'api_execution' | 'guided_flow';
   tool_call?: ToolCall;
   payment_required?: PaymentRequired;
   data?: any;
   proof?: string;
   images?: string[];
   rag_metadata?: {
-    sources: { title: string; score: number; url?: string }[];
+    sources: { number?: number; title: string; score: number; url?: string }[];
     groundedness: string;
     avgScore: number;
     validationResult: any;
@@ -506,11 +507,12 @@ export class ChatComponent implements OnInit {
         const msg: ChatMessage = {
           role: response.role,
           content: response.content,
+          response_type: response.response_type,
           tool_call: response.tool_call,
           payment_required: response.payment_required,
           data: response.data,
           proof: response.proof,
-          images: response.images, // Backend should return image URLs if any were processed/saved
+          images: response.images,
           rag_metadata: response.rag_metadata,
         };
 
