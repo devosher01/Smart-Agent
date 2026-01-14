@@ -207,12 +207,6 @@ Multi-layer validation system:
 - **Semantic Verification** - Validates claims against embeddings
 - **Audit Logging** - Tracks and alerts on problematic responses
 
-### Citation System
-
-- Numbered inline citations: `[1]`, `[2]`, etc.
-- Each citation links to documentation source
-- Frontend displays clickable source pills
-- URLs include section anchors for precise navigation
 
 ## Development
 
