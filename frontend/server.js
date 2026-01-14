@@ -5,11 +5,11 @@ const app = express();
 const PORT = process.env.PORT || 4201;
 
 // Serve static files from Angular build output
-app.use(express.static(path.join(__dirname, 'dist/fuse/browser')));
+app.use(express.static(path.join(__dirname, 'dist/browser')));
 
 // Handle Angular routing - serve index.html for all unmatched routes
 app.use((req, res) => {
-    res.sendFile(path.join(__dirname, 'dist/fuse/browser/index.html'));
+    res.sendFile(path.join(__dirname, 'dist/browser/index.html'));
 });
 
 app.listen(PORT, () => {
