@@ -6,10 +6,11 @@ AI-powered conversational agent for identity validation services. Supports docum
 
 This backend provides an intelligent chat interface that:
 
-- **Answers documentation questions** using Retrieval-Augmented Generation (RAG)
+- **Answers documentation questions** using Retrieval-Augmented Generation (RAG) with Pinecone
 - **Executes API validations** with tool calling and guided flows
 - **Differentiates user intent** automatically (documentation vs execution)
 - **Validates responses** against source material to prevent hallucinations
+- **Provides inline citations** with links to documentation sources
 
 ## Architecture
 
@@ -22,7 +23,7 @@ This backend provides an intelligent chat interface that:
 │   RAG Module    │  Agent Module   │     Blockchain Module       │
 │  ┌───────────┐  │  ┌───────────┐  │     ┌───────────────┐       │
 │  │ Retriever │  │  │  Prompt   │  │     │   ERC-8004    │       │
-│  │ (LanceDB) │  │  │  Builder  │  │     │  Validation   │       │
+│  │(Pinecone) │  │  │  Builder  │  │     │  Validation   │       │
 │  ├───────────┤  │  ├───────────┤  │     └───────────────┘       │
 │  │ Validator │  │  │   Tool    │  │                             │
 │  │(Grounding)│  │  │ Executor  │  │                             │
@@ -32,20 +33,20 @@ This backend provides an intelligent chat interface that:
 │  └───────────┘  │  └───────────┘  │                             │
 ├─────────────────┴─────────────────┴─────────────────────────────┤
 │                        AI Layer                                 │
-│              (Gemini API + Embeddings)                          │
+│              (Gemini API + Pinecone Embeddings)                 │
 ├─────────────────────────────────────────────────────────────────┤
 │                     Data Layer                                  │
-│         (LanceDB Vectors + Documentation Chunks)                │
+│      (Pinecone Vectors with Integrated Embeddings)              │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ### Request Flow
 
 1. **Intent Classification** → Determines if query is documentation or execution
-2. **RAG Retrieval** → Fetches relevant documentation chunks (for doc queries)
-3. **Prompt Construction** → Builds context-aware prompt with mode-specific instructions
-4. **LLM Generation** → Gemini processes and generates response
-5. **Tool Execution** → If tool call detected, executes API and returns result
+2. **RAG Retrieval** → Fetches relevant documentation chunks from Pinecone
+3. **Source Filtering** → Focuses on primary document for cleaner citations
+4. **Prompt Construction** → Builds context-aware prompt with numbered sources
+5. **LLM Generation** → Gemini processes and generates response with inline citations
 6. **Response Validation** → Validates claims against source material
 
 ## Tech Stack
@@ -54,9 +55,9 @@ This backend provides an intelligent chat interface that:
 |-----------|------------|
 | Runtime | Node.js 20+ |
 | Framework | Koa 3.x |
-| AI Provider | Google Gemini 2.0 Flash |
-| Vector DB | LanceDB |
-| Embeddings | Gemini text-embedding-004 |
+| AI Provider | Google Gemini 2.5 Flash |
+| Vector DB | Pinecone (Integrated Embeddings) |
+| Embeddings | multilingual-e5-large (via Pinecone) |
 | Blockchain | Ethers.js (Avalanche Fuji) |
 
 ## Quick Start
@@ -66,6 +67,7 @@ This backend provides an intelligent chat interface that:
 - Node.js 20+
 - npm or yarn
 - Google AI API Key
+- Pinecone API Key
 - Verifik API Token
 
 ### Installation
@@ -80,10 +82,19 @@ npm install
 Create `.env.local`:
 
 ```env
-GEMINI_API_KEY=your_gemini_api_key
-VERIFIK_API_TOKEN=your_verifik_token
+# AI Provider
+GOOGLE_API_KEY=your_gemini_api_key
+
+# Vector Database
+PINECONE_API_KEY=your_pinecone_api_key
+PINECONE_INDEX_NAME=verifik-docs-v3
+
+# Verifik API
+VERIFIK_TOKEN=your_verifik_token
 VERIFIK_API_URL=https://api.verifik.co
-PRIVATE_KEY=your_wallet_private_key  # For ERC-8004 validation proofs
+
+# Optional: Blockchain (ERC-8004)
+PRIVATE_KEY=your_wallet_private_key
 ```
 
 ### Run
@@ -92,7 +103,17 @@ PRIVATE_KEY=your_wallet_private_key  # For ERC-8004 validation proofs
 npm start
 ```
 
-Server starts at `http://localhost:3000`
+Server starts at `http://localhost:3060`
+
+### Ingest Documentation
+
+To update the RAG knowledge base:
+
+```bash
+npm run ingest
+```
+
+This processes markdown files from the Verifik documentation and uploads them to Pinecone.
 
 ## Project Structure
 
@@ -100,29 +121,42 @@ Server starts at `http://localhost:3000`
 src/
 ├── core/
 │   ├── agent/          # Agent orchestration, prompts, tool execution
-│   ├── ai/             # Gemini API client, embeddings
+│   │   ├── index.js           # Main agent module
+│   │   ├── prompt-builder.js  # Context-aware prompt construction
+│   │   ├── tool-executor.js   # API execution handler
+│   │   └── validation-pipeline.js  # Multi-layer response validation
+│   ├── ai/             # Gemini API client
 │   ├── blockchain/     # ERC-8004 validation registry
-│   └── rag/            # Retriever, validator, semantic verification
+│   └── rag/            # RAG system
+│       ├── retriever.js    # Pinecone search, URL generation
+│       ├── validator.js    # Groundedness, source tracking
+│       ├── sanitizer.js    # Response cleanup
+│       └── constants.js    # Thresholds, prompts
 ├── controllers/        # HTTP request handlers
-├── routes/             # API route definitions
-├── data/               # LanceDB vectors, documentation chunks
-└── prompts/            # System prompt templates
+├── repositories/       # Data persistence (conversations)
+├── infrastructure/     # Audit logging, hallucination tracking
+└── routes/             # API route definitions
+
+scripts/
+└── ingest.mjs          # Documentation ingestion pipeline
 ```
 
 ## API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/chat` | Main chat endpoint |
-| GET | `/api/agent/info` | Agent identity and reputation |
-| GET | `/api/agent/card` | ERC-8004 agent card |
+| POST | `/api/agent/chat` | Main chat endpoint |
+| GET | `/api/agent/info` | Agent identity and capabilities |
+| GET | `/api/agent/agent-card.json` | ERC-8004 agent card |
+| GET | `/api/agent/conversations` | List user conversations |
+| GET | `/api/agent/history/:id` | Get conversation history |
 
 ### Chat Request
 
 ```json
 {
   "message": "What endpoints are available for Colombia?",
-  "history": [],
+  "conversationId": "optional-uuid",
   "mode": "credits"
 }
 ```
@@ -131,45 +165,80 @@ src/
 
 ```json
 {
-  "content": "...",
+  "role": "assistant",
+  "content": "Colombia offers several verification endpoints [1]...",
   "response_type": "documentation",
   "rag_metadata": {
-    "sources": [...],
-    "groundedness": "grounded"
+    "sources": [
+      {
+        "number": 1,
+        "title": "Colombian Identity Verification > Endpoint",
+        "url": "https://docs.verifik.co/identity/colombia",
+        "score": 0.72
+      }
+    ],
+    "groundedness": "high",
+    "avgScore": 0.68
   }
 }
 ```
 
-## Key Design Decisions
+## Key Features
 
-### RAG with LanceDB
+### RAG with Pinecone
 
-Chose LanceDB for vector storage due to:
-- Embedded database (no external service required)
-- Native Node.js support
-- Fast approximate nearest neighbor search
-- Simple persistence to disk
+- **Integrated Embeddings**: Uses `multilingual-e5-large` model directly in Pinecone
+- **Smart Chunking**: Documents split by headers with breadcrumb context
+- **Primary Document Filtering**: Focuses citations on most relevant document
+- **Anchor URLs**: Links point to specific sections (#response, #request, etc.)
 
 ### Intent Classification
 
-Two-tier classification approach:
-1. **Keyword heuristics** for obvious patterns (fast path)
-2. **Semantic similarity** for ambiguous queries (accurate path)
-
-Returns: `documentation` | `execution` | `guided_flow`
+Three response types:
+- `documentation` - Informational queries about APIs, features, pricing
+- `api_execution` - Direct API calls with tool execution
+- `guided_flow` - Interactive parameter collection for incomplete requests
 
 ### Hallucination Prevention
 
-Multi-layer validation:
-- **Groundedness scoring** against source chunks
-- **Claim extraction** for fact verification
-- **Source tracking** with confidence scores
-- **Audit logging** for problematic responses
+Multi-layer validation system:
+- **Groundedness Scoring** - Measures response alignment with sources
+- **Pattern Detection** - Catches common hallucination patterns
+- **Semantic Verification** - Validates claims against embeddings
+- **Audit Logging** - Tracks and alerts on problematic responses
 
-### Guided Execution Flow
+### Citation System
 
-When user requests API execution without all parameters:
-1. Agent identifies missing required fields
-2. Returns `guided_flow` response asking for data
-3. User provides missing info
-4. Agent executes with complete parameters
+- Numbered inline citations: `[1]`, `[2]`, etc.
+- Each citation links to documentation source
+- Frontend displays clickable source pills
+- URLs include section anchors for precise navigation
+
+## Development
+
+### Debug Mode
+
+Enable verbose logging:
+
+```bash
+DEBUG=true npm start
+```
+
+### Generate JSDoc
+
+```bash
+npm run docs
+```
+
+Output in `docs/` directory.
+
+## Deployment
+
+Configured for Railway deployment:
+
+```bash
+# railway.toml is pre-configured
+railway up
+```
+
+Required environment variables must be set in Railway dashboard.
