@@ -2,7 +2,7 @@ const axios = require("axios");
 const path = require("path");
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
-const config = require("../config");
+const config = require("../../config");
 
 // Configuration
 const MODELS = {
@@ -20,10 +20,14 @@ let tokenCache = {
 };
 
 /**
- * Get access token using service account credentials
+ * Get access token using service account credentials OR API Key
  */
 const getServiceAccountToken = async () => {
-	// ... (Existing token logic)
+	// Si tenemos API Key, retornamos null (se usará API key en el header)
+	if (config.google.apiKey) {
+		return null;
+	}
+
 	try {
 		const now = Date.now();
 		if (tokenCache.token && tokenCache.expiresAt > now + 5 * 60 * 1000) {
@@ -62,17 +66,17 @@ const getServiceAccountToken = async () => {
 				} catch (e) {
 					throw new Error(
 						`Google Credentials file not found. Tried paths: ${pathsToTry.join(", ")}. ` +
-							`Original path: ${config.google.keyFilePath}. ` +
-							`Current working directory: ${process.cwd()}. ` +
-							`Module directory: ${__dirname}`
+						`Original path: ${config.google.keyFilePath}. ` +
+						`Current working directory: ${process.cwd()}. ` +
+						`Module directory: ${__dirname}`
 					);
 				}
 			}
 		} else {
 			throw new Error(
 				`Google Credentials not configured. ` +
-					`GOOGLE_APPLICATION_CREDENTIALS env var is: ${process.env.GOOGLE_APPLICATION_CREDENTIALS || "undefined"}. ` +
-					`Config value: ${config.google.keyFilePath || "undefined"}`
+				`GOOGLE_APPLICATION_CREDENTIALS env var is: ${process.env.GOOGLE_APPLICATION_CREDENTIALS || "undefined"}. ` +
+				`Config value: ${config.google.keyFilePath || "undefined"}`
 			);
 		}
 

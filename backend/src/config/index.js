@@ -1,19 +1,41 @@
 const path = require("path");
 const dotenv = require("dotenv");
 
-// Load .env from backend directory (where this config file is)
+// Load .env.local first (has priority), then .env as fallback
+const fs = require('fs');
+
+// Load .env.local first (has priority), then .env as fallback
+const envLocalPath = path.resolve(__dirname, "../../.env.local");
 const envPath = path.resolve(__dirname, "../../.env");
+
+// FORCE OVERRIDE: Manually read and parse .env.local to ensure it overwrites ANY shell environment variable
+if (fs.existsSync(envLocalPath)) {
+	const envLocalConfig = dotenv.parse(fs.readFileSync(envLocalPath));
+	for (const k in envLocalConfig) {
+		process.env[k] = envLocalConfig[k];
+	}
+	console.log("[Config] Loaded and FORCED overrides from .env.local");
+} else {
+	dotenv.config({ path: envLocalPath, override: true });
+}
+
 dotenv.config({ path: envPath });
 
-// Debug: Log if GOOGLE_APPLICATION_CREDENTIALS is loaded (without revealing value)
-if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-	console.warn(
-		`[Config] WARNING: GOOGLE_APPLICATION_CREDENTIALS not found in environment. ` +
-			`Tried loading from: ${envPath}. ` +
-			`Current working directory: ${process.cwd()}`
-	);
+// Debug: Log AI provider configuration
+if (process.env.OPENAI_API_KEY) {
+	console.log(`[Config] OPENAI_API_KEY loaded: ${process.env.OPENAI_API_KEY.substring(0, 15)}...`);
+	console.log(`[Config] Using OpenAI as AI provider`);
+} else if (process.env.GOOGLE_API_KEY) {
+	console.log(`[Config] GOOGLE_API_KEY loaded: ${process.env.GOOGLE_API_KEY.substring(0, 10)}...`);
+	console.log(`[Config] Using Gemini as AI provider`);
+} else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+	console.log(`[Config] GOOGLE_APPLICATION_CREDENTIALS loaded`);
+	console.log(`[Config] Using Gemini as AI provider`);
 } else {
-	console.log(`[Config] GOOGLE_APPLICATION_CREDENTIALS loaded: ${process.env.GOOGLE_APPLICATION_CREDENTIALS.substring(0, 50)}...`);
+	console.warn(
+		`[Config] WARNING: No AI credentials found. ` +
+		`Set OPENAI_API_KEY or GOOGLE_API_KEY.`
+	);
 }
 
 const config = {
@@ -24,8 +46,13 @@ const config = {
 		serviceToken: process.env.VERIFIK_SERVICE_TOKEN,
 	},
 	google: {
-		// We can load the key file path or content from env
+		// API Key is the recommended approach (simpler)
+		apiKey: process.env.GOOGLE_API_KEY,
+		// Service Account file path (alternative)
 		keyFilePath: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+	},
+	openai: {
+		apiKey: process.env.OPENAI_API_KEY,
 	},
 	x402: {
 		rpcUrl: process.env.X402_RPC_URL || "https://api.avax-test.network/ext/bc/C/rpc",

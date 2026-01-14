@@ -5,20 +5,30 @@ const config = require("./config");
 
 const app = new Koa();
 
-// Logger first
+// Logger middleware to log incoming requests
 app.use(async (ctx, next) => {
 	console.log(`[${new Date().toISOString()}] Incoming: ${ctx.method} ${ctx.url}`);
 	await next();
 });
 
-// Global error handler
+// Global error handling middleware
 app.use(async (ctx, next) => {
 	try {
 		await next();
 	} catch (err) {
-		console.error("Error middleware caught:", err);
-		ctx.status = err.status || 500;
-		ctx.body = { error: err.message };
+		const status = err.status || 500;
+		const isDev = config.env === "development";
+
+		console.error(`[Error] ${ctx.method} ${ctx.url} - Status: ${status}`);
+		console.error(err);
+
+		ctx.status = status;
+		ctx.body = {
+			error: err.message || "Internal Server Error",
+			...(isDev && { stack: err.stack }),
+		};
+
+		// Emit error for centralized logging
 		ctx.app.emit("error", err, ctx);
 	}
 });
@@ -26,12 +36,11 @@ app.use(async (ctx, next) => {
 app.use(cors());
 app.use(koaBody());
 
-// Import Routes
-// Import Routes
+// Import routes
 const unprotectedRoutes = require("./routes/unprotected");
 const proxyRoutes = require("./routes/proxy");
 
-// Register Routes
+// Register routes
 app.use(unprotectedRoutes.routes());
 app.use(unprotectedRoutes.allowedMethods());
 
@@ -58,4 +67,15 @@ app.listen(port, () => {
 	// Run cleanup on startup
 	const ConversationRepository = require("./repositories/conversation.repository");
 	ConversationRepository.cleanup(30);
+});
+
+// Process-level error handling to prevent crashes from async code outside Koa flow
+process.on("uncaughtException", (err) => {
+	console.error("[CRITICAL] Uncaught Exception:", err);
+	// In a production environment, you might want to perform a graceful shutdown here
+	// and let a process manager like PM2 restart the server.
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+	console.error("[CRITICAL] Unhandled Rejection at:", promise, "reason:", reason);
 });

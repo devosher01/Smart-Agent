@@ -1,10 +1,14 @@
-import { provideHttpClient } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import {
     ApplicationConfig,
+    ErrorHandler,
     inject,
     isDevMode,
     provideAppInitializer,
 } from '@angular/core';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { GlobalErrorHandler } from 'app/core/error-handling/global-error-handler.service';
+import { HttpErrorInterceptor } from 'app/core/error-handling/http-error.interceptor';
 import { LuxonDateAdapter } from '@angular/material-luxon-adapter';
 import { DateAdapter, MAT_DATE_FORMATS } from '@angular/material/core';
 import { provideAnimations } from '@angular/platform-browser/animations';
@@ -21,11 +25,25 @@ import { TranslocoHttpLoader } from './core/transloco/transloco.http-loader';
 export const appConfig: ApplicationConfig = {
     providers: [
         provideAnimations(),
-        provideHttpClient(),
+        provideHttpClient(withInterceptorsFromDi()),
         provideRouter(
             appRoutes,
             withInMemoryScrolling({ scrollPositionRestoration: 'enabled' })
         ),
+
+        // Global Error Handling
+        {
+            provide: ErrorHandler,
+            useClass: GlobalErrorHandler,
+        },
+        {
+            provide: HTTP_INTERCEPTORS,
+            useClass: HttpErrorInterceptor,
+            multi: true,
+        },
+
+        // Material Modules
+        MatSnackBarModule,
 
         // Material Date Adapter
         {

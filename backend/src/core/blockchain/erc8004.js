@@ -1,5 +1,5 @@
 const { ethers } = require("ethers");
-const config = require("../config");
+const config = require("../../config");
 
 // Contract ABIs (simplified)
 const IDENTITY_REGISTRY_ABI = [
@@ -27,10 +27,10 @@ let reputationRegistry = null;
 let validationRegistry = null;
 
 const initialize = () => {
-	// Check if configuration exists
-	if (!config.x402?.rpcUrl) return false;
-
-	provider = new ethers.JsonRpcProvider(config.x402.rpcUrl);
+	if (!config.x402?.rpcUrl) {
+		console.warn("[ERC8004] No RPC URL configured. ERC8004 features disabled.");
+		return false;
+	}
 
 	const identityAddress = config.erc8004?.identityRegistry;
 	const reputationAddress = config.erc8004?.reputationRegistry;
@@ -41,16 +41,35 @@ const initialize = () => {
 		return false;
 	}
 
-	identityRegistry = new ethers.Contract(identityAddress, IDENTITY_REGISTRY_ABI, provider);
-	reputationRegistry = new ethers.Contract(reputationAddress, REPUTATION_REGISTRY_ABI, provider);
-	validationRegistry = new ethers.Contract(validationAddress, VALIDATION_REGISTRY_ABI, provider);
+	// Validate addresses to prevent ENS errors on networks without ENS support
+	if (!ethers.isAddress(identityAddress) || !ethers.isAddress(reputationAddress) || !ethers.isAddress(validationAddress)) {
+		console.warn("[ERC8004] Invalid contract addresses (check .env). ERC8004 features disabled.");
+		return false;
+	}
 
-	return true;
+	try {
+		provider = new ethers.JsonRpcProvider(config.x402.rpcUrl);
+		identityRegistry = new ethers.Contract(identityAddress, IDENTITY_REGISTRY_ABI, provider);
+		reputationRegistry = new ethers.Contract(reputationAddress, REPUTATION_REGISTRY_ABI, provider);
+		validationRegistry = new ethers.Contract(validationAddress, VALIDATION_REGISTRY_ABI, provider);
+		return true;
+	} catch (error) {
+		console.error("[ERC8004] Failed to initialize:", error.message);
+		return false;
+	}
 };
 
 // ... Helper functions mirroring the original ...
 
 const getAgentIdentity = async (tokenId) => {
+	if (!config.x402?.rpcUrl) return null; // Fast fail if no RPC
+
+	// Validate tokenId
+	if (!tokenId || (typeof tokenId === 'string' && !/^\d+$/.test(tokenId))) {
+		console.warn(`[ERC8004] Invalid Agent Token ID: ${tokenId}. Skipping identity fetch.`);
+		return null;
+	}
+
 	if (!identityRegistry) initialize();
 	if (!identityRegistry) return null;
 
@@ -157,19 +176,26 @@ const getValidationStats = async (tokenId) => {
 const hashOutput = (data) => ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(data)));
 
 const getAgentWallet = () => {
-	if (!provider) initialize();
-
 	if (!config.x402?.walletPrivateKey) return null;
 
-	// Support Mnemonics or Private Key
-	const key = config.x402.walletPrivateKey.trim();
-	if (key.includes(" ")) {
-		return ethers.HDNodeWallet.fromPhrase(key).connect(provider);
+	try {
+		if (!provider && config.x402?.rpcUrl) {
+			provider = new ethers.JsonRpcProvider(config.x402.rpcUrl);
+		}
+		if (!provider) return null;
+
+		const key = config.x402.walletPrivateKey.trim();
+		if (key.includes(" ")) {
+			return ethers.HDNodeWallet.fromPhrase(key).connect(provider);
+		}
+		return new ethers.Wallet(key, provider);
+	} catch (error) {
+		console.error("[ERC8004] Failed to create wallet:", error.message);
+		return null;
 	}
-	return new ethers.Wallet(key, provider);
 };
 
-initialize();
+// Don't auto-initialize - will be done lazily when needed
 
 module.exports = {
 	initialize,

@@ -1,22 +1,18 @@
-<div class="flex h-screen w-full bg-white dark:bg-slate-900 overflow-hidden relative">
+<div class="flex h-full w-full bg-white dark:bg-slate-900 overflow-hidden relative">
   <!-- Sidebar -->
   <aside
     class="w-[280px] bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-all duration-300 shrink-0 z-20"
-    [class.-ml-[280px]]="!isSidebarOpen()"
-  >
+    [class.-ml-[280px]]="!isSidebarOpen()">
     <!-- Sidebar Header -->
     <div
-      class="h-16 px-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-sm z-10"
-    >
+      class="h-16 px-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-sm z-10">
       <div class="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-200">
         <mat-icon class="text-slate-500">history</mat-icon>
         <span>Your Chats</span>
       </div>
-      <button
-        (click)="startNewChat()"
+      <button (click)="startNewChat()"
         class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-400"
-        matTooltip="New Chat"
-      >
+        matTooltip="New Chat">
         <mat-icon>add_circle_outline</mat-icon>
       </button>
     </div>
@@ -24,62 +20,45 @@
     <!-- Conversation List -->
     <div class="flex-1 overflow-y-auto p-3 space-y-1">
       @if (conversations().length === 0) {
-        <div class="text-center py-8 text-slate-400 text-sm">No history yet. Start a chat!</div>
+      <div class="text-center py-8 text-slate-400 text-sm">No history yet. Start a chat!</div>
       }
 
       @for (conv of conversations(); track conv.id) {
-        <div
-          class="group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all border border-transparent"
-          [class.bg-white]="currentConversationId() === conv.id"
-          [class.dark:bg-slate-900]="currentConversationId() === conv.id"
-          [class.shadow-sm]="currentConversationId() === conv.id"
-          [class.border-slate-200]="currentConversationId() === conv.id"
-          [class.dark:border-slate-800]="currentConversationId() === conv.id"
-          [class.hover:bg-slate-200]="currentConversationId() !== conv.id"
-          [class.dark:hover:bg-slate-900]="currentConversationId() !== conv.id"
-          (click)="selectConversation(conv.id)"
-        >
-          @if (isRenamingId() === conv.id) {
-            <input
-              type="text"
-              [(ngModel)]="renameInput"
-              (click)="$event.stopPropagation()"
-              (blur)="saveRename(conv)"
-              (keyup.enter)="saveRename(conv)"
-              class="w-full text-sm bg-white dark:bg-slate-900 border border-blue-500 rounded px-2 py-1 outline-none"
-            />
-          } @else {
-            <div class="flex-1 min-w-0 pr-2">
-              <div class="truncate text-sm font-medium text-slate-700 dark:text-slate-300">
-                {{ conv.title }}
-              </div>
-              <div class="text-[10px] text-slate-400 mt-0.5">
-                {{ conv.updated_at | date: 'MMM d, h:mm a' }}
-              </div>
-            </div>
-
-            <div class="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
-              <button
-                (click)="startRenaming(conv, $event)"
-                class="p-1 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded text-slate-400 hover:text-blue-500 transition-colors"
-              >
-                <mat-icon
-                  class="!w-4 !h-4 !text-[16px] leading-none flex items-center justify-center"
-                  >edit</mat-icon
-                >
-              </button>
-              <button
-                (click)="deleteConversation(conv, $event)"
-                class="p-1 hover:bg-red-50 dark:hover:bg-red-900/30 rounded text-slate-400 hover:text-red-500 transition-colors"
-              >
-                <mat-icon
-                  class="!w-4 !h-4 !text-[16px] leading-none flex items-center justify-center"
-                  >delete</mat-icon
-                >
-              </button>
-            </div>
-          }
+      <div
+        class="group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all border border-transparent"
+        [class.bg-white]="currentConversationId() === conv.id"
+        [class.dark:bg-slate-900]="currentConversationId() === conv.id"
+        [class.shadow-sm]="currentConversationId() === conv.id"
+        [class.border-slate-200]="currentConversationId() === conv.id"
+        [class.dark:border-slate-800]="currentConversationId() === conv.id"
+        [class.hover:bg-slate-200]="currentConversationId() !== conv.id"
+        [class.dark:hover:bg-slate-900]="currentConversationId() !== conv.id" (click)="selectConversation(conv.id)">
+        @if (isRenamingId() === conv.id) {
+        <input type="text" [(ngModel)]="renameInput" (click)="$event.stopPropagation()" (blur)="saveRename(conv)"
+          (keyup.enter)="saveRename(conv)"
+          class="w-full text-sm bg-white dark:bg-slate-900 border border-blue-500 rounded px-2 py-1 outline-none" />
+        } @else {
+        <div class="flex-1 min-w-0 pr-2">
+          <div class="truncate text-sm font-medium text-slate-700 dark:text-slate-300">
+            {{ conv.title }}
+          </div>
+          <div class="text-[10px] text-slate-400 mt-0.5">
+            {{ conv.updated_at | date: 'MMM d, h:mm a' }}
+          </div>
         </div>
+
+        <div class="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
+          <button (click)="startRenaming(conv, $event)"
+            class="p-1 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded text-slate-400 hover:text-blue-500 transition-colors">
+            <mat-icon class="!w-4 !h-4 !text-[16px] leading-none flex items-center justify-center">edit</mat-icon>
+          </button>
+          <button (click)="deleteConversation(conv, $event)"
+            class="p-1 hover:bg-red-50 dark:hover:bg-red-900/30 rounded text-slate-400 hover:text-red-500 transition-colors">
+            <mat-icon class="!w-4 !h-4 !text-[16px] leading-none flex items-center justify-center">delete</mat-icon>
+          </button>
+        </div>
+        }
+      </div>
       }
     </div>
   </aside>
@@ -88,33 +67,26 @@
   <main class="flex-1 flex flex-col h-full min-w-0 relative bg-white dark:bg-slate-900">
     <!-- Header -->
     <div
-      class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-4 flex items-center justify-between shrink-0 z-10"
-    >
+      class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-4 flex items-center justify-between shrink-0 z-10">
       <div class="flex items-center gap-3">
         <!-- Sidebar Toggle -->
-        <button
-          (click)="toggleSidebar()"
-          class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
-        >
+        <button (click)="toggleSidebar()"
+          class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500">
           <mat-icon>{{ isSidebarOpen() ? 'menu_open' : 'menu' }}</mat-icon>
         </button>
 
         <!-- Identity -->
         <div class="flex items-center gap-3 cursor-pointer group" (click)="toggleAgentInfoModal()">
           <div
-            class="w-9 h-9 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs shadow-sm relative group-hover:scale-105 transition-transform"
-          >
+            class="w-9 h-9 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs shadow-sm relative group-hover:scale-105 transition-transform">
             AI
             @if (agentInfo()?.identity) {
-              <div
-                class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"
-              ></div>
+            <div class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full">
+            </div>
             }
           </div>
           <div>
-            <div
-              class="font-bold text-slate-900 dark:text-white text-sm group-hover:text-blue-600 transition-colors"
-            >
+            <div class="font-bold text-slate-900 dark:text-white text-sm group-hover:text-blue-600 transition-colors">
               {{ agentInfo()?.identity?.name || 'Verifik Agent' }}
             </div>
             <div class="text-[10px] text-slate-500 font-medium hidden sm:block">
@@ -128,490 +100,433 @@
       <div class="flex items-center gap-3">
         <!-- Mode Toggle -->
         <div
-          class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 border border-slate-200 dark:border-slate-700 hidden sm:flex"
-        >
-          <button
-            class="px-3 py-1.5 rounded-md text-xs font-medium transition-all"
-            [class.bg-white]="chatMode() === 'credits'"
-            [class.text-slate-900]="chatMode() === 'credits'"
-            [class.shadow-sm]="chatMode() === 'credits'"
-            [class.dark:bg-slate-700]="chatMode() === 'credits'"
-            [class.dark:text-white]="chatMode() === 'credits'"
-            [class.text-slate-500]="chatMode() !== 'credits'"
-            (click)="setChatMode('credits')"
-          >
+          class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 border border-slate-200 dark:border-slate-700 hidden sm:flex">
+          <button class="px-3 py-1.5 rounded-md text-xs font-medium transition-all"
+            [class.bg-white]="chatMode() === 'credits'" [class.text-slate-900]="chatMode() === 'credits'"
+            [class.shadow-sm]="chatMode() === 'credits'" [class.dark:bg-slate-700]="chatMode() === 'credits'"
+            [class.dark:text-white]="chatMode() === 'credits'" [class.text-slate-500]="chatMode() !== 'credits'"
+            (click)="setChatMode('credits')">
             {{ 'chat.mode.credits' | transloco }}
           </button>
-          <button
-            class="px-3 py-1.5 rounded-md text-xs font-medium transition-all"
-            [class.bg-white]="chatMode() === 'x402'"
-            [class.text-slate-900]="chatMode() === 'x402'"
-            [class.shadow-sm]="chatMode() === 'x402'"
-            [class.dark:bg-slate-700]="chatMode() === 'x402'"
-            [class.dark:text-white]="chatMode() === 'x402'"
-            [class.text-slate-500]="chatMode() !== 'x402'"
-            (click)="setChatMode('x402')"
-          >
+          <button class="px-3 py-1.5 rounded-md text-xs font-medium transition-all"
+            [class.bg-white]="chatMode() === 'x402'" [class.text-slate-900]="chatMode() === 'x402'"
+            [class.shadow-sm]="chatMode() === 'x402'" [class.dark:bg-slate-700]="chatMode() === 'x402'"
+            [class.dark:text-white]="chatMode() === 'x402'" [class.text-slate-500]="chatMode() !== 'x402'"
+            (click)="setChatMode('x402')">
             x402
           </button>
         </div>
 
         <!-- Wallet Widget -->
         @if (chatMode() === 'x402' && walletAddress()) {
-          <div
-            class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-slate-300 transition-colors hover:shadow-sm"
-            (click)="toggleWalletModal()"
-          >
-            <div class="text-xs font-medium text-slate-600 dark:text-slate-300 font-mono">
-              {{ walletBalance() | number: '1.4-4' }} AVAX
-            </div>
-            <div
-              class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400"
-            >
-              <mat-icon class="!w-3.5 !h-3.5 !text-[14px]">account_balance_wallet</mat-icon>
-            </div>
+        <div
+          class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-slate-300 transition-colors hover:shadow-sm"
+          (click)="toggleWalletModal()">
+          <div class="text-xs font-medium text-slate-600 dark:text-slate-300 font-mono">
+            {{ walletBalance() | number: '1.4-4' }} AVAX
           </div>
+          <div
+            class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+            <mat-icon class="!w-3.5 !h-3.5 !text-[14px]">account_balance_wallet</mat-icon>
+          </div>
+        </div>
         }
       </div>
     </div>
 
     <!-- Scrollable Messages Area -->
-    <div class="flex-1 overflow-y-auto messages-container p-4 scroll-smooth" #scrollContainer>
-      <div class="max-w-4xl mx-auto space-y-6 pb-4">
+    <div
+      class="flex-1 min-h-0 overflow-y-auto messages-container bg-slate-50 dark:bg-slate-950 p-4 sm:p-6 scroll-smooth"
+      #scrollContainer>
+      <div class="max-w-6xl mx-auto space-y-4 pb-4">
         @for (msg of messages(); track $index) {
-          <!-- Case 1: Feedback Proof Card -->
-          @if (msg.role === 'system' && msg.content.includes('Feedback submitted')) {
-            <div class="message flex gap-4 animate-fadeIn">
-              <!-- Avatar -->
-              <div
-                class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-50"
-              >
-                AI
-              </div>
+        <!-- Case 1: Feedback Proof Card -->
+        @if (msg.role === 'system' && msg.content.includes('Feedback submitted')) {
+        <div class="message flex gap-4 animate-fadeIn">
+          <!-- Avatar -->
+          <div
+            class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-50">
+            AI
+          </div>
 
-              <!-- Card as Bubble -->
-              <div class="max-w-[85%] sm:max-w-lg w-full">
-                <div
-                  class="bg-white dark:bg-slate-800 rounded-2xl rounded-tl-sm p-4 shadow-sm border border-slate-200 dark:border-slate-700 w-full"
-                >
-                  <!-- Header -->
-                  <div
-                    class="flex flex-wrap items-center justify-between mb-3 pb-3 border-b border-slate-100 dark:border-slate-700 gap-2"
-                  >
-                    <div class="flex items-center gap-2">
-                      <div
-                        class="w-6 h-6 rounded-full bg-yellow-100 flex items-center justify-center"
-                      >
-                        <mat-icon class="text-yellow-600 !w-4 !h-4 !text-[16px]">star</mat-icon>
-                      </div>
-                      <span class="text-sm font-bold text-slate-800 dark:text-white"
-                        >Proof of Feedback</span
-                      >
-                    </div>
-                    @if (msg.content.includes('Waiting')) {
-                      <div
-                        class="flex items-center gap-1.5 text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100"
-                      >
-                        <mat-progress-spinner
-                          diameter="12"
-                          mode="indeterminate"
-                          class="mr-1"
-                        ></mat-progress-spinner>
-                        Confirming...
-                      </div>
-                    } @else {
-                      <div
-                        class="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100"
-                      >
-                        <mat-icon class="!w-3 !h-3 !text-[12px]">check_circle</mat-icon>
-                        On-Chain
-                      </div>
-                    }
-                  </div>
-
-                  <!-- Body -->
-                  <div class="space-y-3">
-                    <div class="text-sm text-slate-600 dark:text-slate-300">
-                      Processing your reputation feedback on correct execution.
-                    </div>
-
-                    @if (extractTxHash(msg.content); as txHash) {
-                      <div class="flex flex-col gap-1.5">
-                        <label
-                          class="text-[10px] uppercase tracking-wider font-semibold text-slate-400"
-                          >Transaction Hash</label
-                        >
-                        <a
-                          [href]="'https://testnet.snowtrace.io/tx/' + txHash"
-                          target="_blank"
-                          class="group flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:bg-blue-50/50 transition-all cursor-pointer text-decoration-none"
-                        >
-                          <span
-                            class="font-mono text-xs text-slate-600 dark:text-slate-400 truncate mr-2"
-                            >{{ txHash }}</span
-                          >
-                          <div
-                            class="flex items-center gap-1 text-slate-400 group-hover:text-blue-500"
-                          >
-                            <span class="text-[10px] font-bold">VIEW</span>
-                            <mat-icon class="!w-3 !h-3 !text-[12px]">open_in_new</mat-icon>
-                          </div>
-                        </a>
-                      </div>
-                    }
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Case 2: Success Toast -->
-            <!-- Case 2: Success Toast -->
-          } @else if (
-            msg.role === 'system' && msg.content.includes('Thank you for your feedback')
-          ) {
-            <div class="flex justify-center my-4 animate-fadeIn">
-              <div
-                class="flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-100 text-emerald-800 rounded-full text-sm font-medium shadow-sm"
-              >
-                <mat-icon class="!w-4 !h-4 !text-[16px]">verified</mat-icon>
-                Reputation Recorded Successfully
-              </div>
-            </div>
-
-            <!-- Case 3: Payment Receipt Card -->
-          } @else if (msg.role === 'system' && msg.content.includes('Payment sent!')) {
-            <div class="message flex gap-4 animate-fadeIn">
-              <!-- Avatar -->
-              <div
-                class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-50"
-              >
-                AI
-              </div>
-
-              <!-- Payment Receipt Card -->
-              <div class="max-w-[85%] sm:max-w-lg w-full">
-                <div
-                  class="bg-white dark:bg-slate-800 rounded-2xl rounded-tl-sm p-4 shadow-sm border border-slate-200 dark:border-slate-700 w-full"
-                >
-                  <!-- Header -->
-                  <div
-                    class="flex flex-wrap items-center justify-between mb-3 pb-3 border-b border-slate-100 dark:border-slate-700 gap-2"
-                  >
-                    <div class="flex items-center gap-2">
-                      <div
-                        class="w-6 h-6 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center"
-                      >
-                        <mat-icon class="text-blue-600 dark:text-blue-400 !w-4 !h-4 !text-[16px]"
-                          >receipt_long</mat-icon
-                        >
-                      </div>
-                      <span class="text-sm font-bold text-slate-800 dark:text-white"
-                        >Payment Receipt</span
-                      >
-                      <span
-                        class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 text-[10px] font-bold uppercase tracking-wider"
-                        >AVAX</span
-                      >
-                    </div>
-
-                    @if (msg.content.includes('Waiting')) {
-                      <div
-                        class="flex items-center gap-1.5 text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100"
-                      >
-                        <mat-progress-spinner
-                          diameter="12"
-                          mode="indeterminate"
-                          class="mr-1"
-                        ></mat-progress-spinner>
-                        Processing...
-                      </div>
-                    } @else {
-                      <div
-                        class="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100"
-                      >
-                        <mat-icon class="!w-3 !h-3 !text-[12px]">check_circle</mat-icon>
-                        Confirmed
-                      </div>
-                    }
-                  </div>
-
-                  <!-- Body & Tx Hash -->
-                  <div class="space-y-3">
-                    <p class="text-sm text-slate-600 dark:text-slate-300">
-                      Transaction initiated on chain.
-                    </p>
-
-                    <!-- Reusing Tx Hash Display Logic -->
-                    @if (extractTxHash(msg.content); as txHash) {
-                      <div class="flex flex-col gap-1.5">
-                        <label
-                          class="text-[10px] uppercase tracking-wider font-semibold text-slate-400"
-                          >Transaction Hash</label
-                        >
-                        <a
-                          [href]="'https://testnet.snowtrace.io/tx/' + txHash"
-                          target="_blank"
-                          class="group flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:bg-blue-50/50 transition-all cursor-pointer text-decoration-none"
-                        >
-                          <span
-                            class="font-mono text-xs text-slate-600 dark:text-slate-400 truncate mr-2"
-                            >{{ txHash }}</span
-                          >
-                          <div
-                            class="flex items-center gap-1 text-slate-400 group-hover:text-blue-500"
-                          >
-                            <span class="text-[10px] font-bold">VIEW</span>
-                            <mat-icon class="!w-3 !h-3 !text-[12px]">open_in_new</mat-icon>
-                          </div>
-                        </a>
-                      </div>
-                    }
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Case 4: Regular Message -->
-          } @else {
+          <!-- Card as Bubble -->
+          <div class="max-w-[85%] sm:max-w-lg w-full">
             <div
-              class="message flex gap-4 animate-fadeIn"
-              [class.flex-row-reverse]="msg.role === 'user'"
-            >
-              <!-- Avatar -->
+              class="bg-white dark:bg-slate-800 rounded-2xl rounded-tl-sm p-4 shadow-sm border border-slate-200 dark:border-slate-700 w-full">
+              <!-- Header -->
               <div
-                class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold"
-                [class.bg-slate-900]="msg.role === 'user'"
-                [class.text-white]="msg.role === 'user'"
-                [class.bg-slate-200]="msg.role !== 'user'"
-                [class.text-slate-700]="msg.role !== 'user'"
-                [class.dark:bg-slate-700]="msg.role !== 'user'"
-                [class.dark:text-slate-50]="msg.role !== 'user'"
-              >
-                @if (msg.role === 'user') {
-                  <mat-icon class="!w-4 !h-4 !text-[16px] flex items-center justify-center"
-                    >person</mat-icon
-                  >
+                class="flex flex-wrap items-center justify-between mb-3 pb-3 border-b border-slate-100 dark:border-slate-700 gap-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-full bg-yellow-100 flex items-center justify-center">
+                    <mat-icon class="text-yellow-600 !w-4 !h-4 !text-[16px]">star</mat-icon>
+                  </div>
+                  <span class="text-sm font-bold text-slate-800 dark:text-white">Proof of Feedback</span>
+                </div>
+                @if (msg.content.includes('Waiting')) {
+                <div
+                  class="flex items-center gap-1.5 text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100">
+                  <mat-progress-spinner diameter="12" mode="indeterminate" class="mr-1"></mat-progress-spinner>
+                  Confirming...
+                </div>
                 } @else {
-                  AI
+                <div
+                  class="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">
+                  <mat-icon class="!w-3 !h-3 !text-[12px]">check_circle</mat-icon>
+                  On-Chain
+                </div>
                 }
               </div>
 
-              <!-- Bubble -->
-              <div class="max-w-[85%]">
-                <div
-                  class="message-bubble p-4 rounded-2xl shadow-sm border"
-                  [class.bg-slate-900]="msg.role === 'user'"
-                  [class.text-white]="msg.role === 'user'"
-                  [class.border-slate-800]="msg.role === 'user'"
-                  [class.rounded-tr-sm]="msg.role === 'user'"
-                  [class.bg-white]="msg.role !== 'user'"
-                  [class.text-slate-700]="msg.role !== 'user'"
-                  [class.dark:bg-slate-800]="msg.role !== 'user'"
-                  [class.dark:text-slate-200]="msg.role !== 'user'"
-                  [class.border-slate-200]="msg.role !== 'user'"
-                  [class.dark:border-slate-700]="msg.role !== 'user'"
-                  [class.rounded-tl-sm]="msg.role !== 'user'"
-                >
-                  <!-- Content -->
-                  <div
-                    class="markdown-body text-sm leading-relaxed whitespace-pre-wrap font-sans"
-                    [innerHTML]="msg.content | markdown"
-                  ></div>
-
-                  <!-- Images -->
-                  @if (msg.images && msg.images.length > 0) {
-                    <div class="flex flex-wrap gap-2 mt-3">
-                      @for (imgSrc of msg.images; track $index) {
-                        <img
-                          [src]="getImageUrl(imgSrc)"
-                          class="max-w-[200px] h-auto rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer hover:opacity-90 transition-opacity"
-                          (click)="
-                            $event.stopPropagation(); window.open(getImageUrl(imgSrc), '_blank')
-                          "
-                        />
-                      }
-                    </div>
-                  }
-
-                  <!-- Payment Request -->
-                  @if (msg.payment_required) {
-                    <div
-                      class="mt-4 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-700"
-                    >
-                      <div
-                        class="flex items-center gap-2 mb-2 text-slate-900 dark:text-white font-semibold"
-                      >
-                        <span class="text-amber-500">⚡</span>
-                        {{ 'chat.payment.required' | transloco }}
-                      </div>
-                      <div class="text-xl font-bold mb-2 text-slate-800 dark:text-slate-100">
-                        {{ msg.payment_required.amount }} AVAX
-                      </div>
-                      <div class="text-xs text-slate-500 mb-3 break-all font-mono">
-                        To: {{ msg.payment_required.receiver_address }}
-                      </div>
-                      <button
-                        mat-flat-button
-                        color="primary"
-                        class="w-full"
-                        (click)="confirmPayment($index)"
-                      >
-                        {{ 'chat.payment.payBtn' | transloco }}
-                      </button>
-                    </div>
-                  }
-
-                  <!-- Data Display -->
-                  @if (msg.data) {
-                    <div
-                      class="mt-3 p-3 bg-slate-100 dark:bg-slate-950 rounded-lg text-xs font-mono overflow-x-auto border border-slate-200 dark:border-slate-800"
-                    >
-                      <pre class="whitespace-pre-wrap">{{ msg.data | json }}</pre>
-                    </div>
-
-                    @if (msg.proof) {
-                      <div
-                        class="mt-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center justify-between"
-                      >
-                        <div class="flex items-center gap-2">
-                          <div
-                            class="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center"
-                          >
-                            <mat-icon class="!w-4 !h-4 !text-[16px]">verified</mat-icon>
-                          </div>
-                          <div class="text-xs text-green-800 dark:text-green-300 font-medium">
-                            Validated On-Chain
-                          </div>
-                        </div>
-                        <a
-                          [href]="'https://testnet.snowtrace.io/tx/' + msg.proof"
-                          target="_blank"
-                          class="text-xs text-green-600 hover:underline flex items-center gap-1"
-                        >
-                          View TX <mat-icon class="!w-3 !h-3 !text-[12px]">open_in_new</mat-icon>
-                        </a>
-                      </div>
-                    }
-
-                    @if (chatMode() === 'x402' && msg.role === 'assistant') {
-                      <button
-                        class="mt-3 text-xs text-slate-400 hover:text-yellow-500 flex items-center gap-1 transition-colors"
-                        (click)="openFeedbackModal()"
-                      >
-                        <mat-icon class="!w-3 !h-3 !text-[12px]">star_outline</mat-icon> Rate this
-                      </button>
-                    }
-                  }
+              <!-- Body -->
+              <div class="space-y-3">
+                <div class="text-sm text-slate-600 dark:text-slate-300">
+                  Processing your reputation feedback on correct execution.
                 </div>
+
+                @if (extractTxHash(msg.content); as txHash) {
+                <div class="flex flex-col gap-1.5">
+                  <label class="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Transaction
+                    Hash</label>
+                  <a [href]="'https://testnet.snowtrace.io/tx/' + txHash" target="_blank"
+                    class="group flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:bg-blue-50/50 transition-all cursor-pointer text-decoration-none">
+                    <span class="font-mono text-xs text-slate-600 dark:text-slate-400 truncate mr-2">{{ txHash }}</span>
+                    <div class="flex items-center gap-1 text-slate-400 group-hover:text-blue-500">
+                      <span class="text-[10px] font-bold">VIEW</span>
+                      <mat-icon class="!w-3 !h-3 !text-[12px]">open_in_new</mat-icon>
+                    </div>
+                  </a>
+                </div>
+                }
               </div>
             </div>
-          }
+          </div>
+        </div>
+
+        <!-- Case 2: Success Toast -->
+        <!-- Case 2: Success Toast -->
+        } @else if (
+        msg.role === 'system' && msg.content.includes('Thank you for your feedback')
+        ) {
+        <div class="flex justify-center my-4 animate-fadeIn">
+          <div
+            class="flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-100 text-emerald-800 rounded-full text-sm font-medium shadow-sm">
+            <mat-icon class="!w-4 !h-4 !text-[16px]">verified</mat-icon>
+            Reputation Recorded Successfully
+          </div>
+        </div>
+
+        <!-- Case 3: Payment Receipt Card -->
+        } @else if (msg.role === 'system' && msg.content.includes('Payment sent!')) {
+        <div class="message flex gap-4 animate-fadeIn">
+          <!-- Avatar -->
+          <div
+            class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-50">
+            AI
+          </div>
+
+          <!-- Payment Receipt Card -->
+          <div class="max-w-[85%] sm:max-w-lg w-full">
+            <div
+              class="bg-white dark:bg-slate-800 rounded-2xl rounded-tl-sm p-4 shadow-sm border border-slate-200 dark:border-slate-700 w-full">
+              <!-- Header -->
+              <div
+                class="flex flex-wrap items-center justify-between mb-3 pb-3 border-b border-slate-100 dark:border-slate-700 gap-2">
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+                    <mat-icon class="text-blue-600 dark:text-blue-400 !w-4 !h-4 !text-[16px]">receipt_long</mat-icon>
+                  </div>
+                  <span class="text-sm font-bold text-slate-800 dark:text-white">Payment Receipt</span>
+                  <span
+                    class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 text-[10px] font-bold uppercase tracking-wider">AVAX</span>
+                </div>
+
+                @if (msg.content.includes('Waiting')) {
+                <div
+                  class="flex items-center gap-1.5 text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100">
+                  <mat-progress-spinner diameter="12" mode="indeterminate" class="mr-1"></mat-progress-spinner>
+                  Processing...
+                </div>
+                } @else {
+                <div
+                  class="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">
+                  <mat-icon class="!w-3 !h-3 !text-[12px]">check_circle</mat-icon>
+                  Confirmed
+                </div>
+                }
+              </div>
+
+              <!-- Body & Tx Hash -->
+              <div class="space-y-3">
+                <p class="text-sm text-slate-600 dark:text-slate-300">
+                  Transaction initiated on chain.
+                </p>
+
+                <!-- Reusing Tx Hash Display Logic -->
+                @if (extractTxHash(msg.content); as txHash) {
+                <div class="flex flex-col gap-1.5">
+                  <label class="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Transaction
+                    Hash</label>
+                  <a [href]="'https://testnet.snowtrace.io/tx/' + txHash" target="_blank"
+                    class="group flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:bg-blue-50/50 transition-all cursor-pointer text-decoration-none">
+                    <span class="font-mono text-xs text-slate-600 dark:text-slate-400 truncate mr-2">{{ txHash }}</span>
+                    <div class="flex items-center gap-1 text-slate-400 group-hover:text-blue-500">
+                      <span class="text-[10px] font-bold">VIEW</span>
+                      <mat-icon class="!w-3 !h-3 !text-[12px]">open_in_new</mat-icon>
+                    </div>
+                  </a>
+                </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Case 4: Regular Message -->
+        } @else {
+        <div class="message flex gap-4 animate-fadeIn" [class.flex-row-reverse]="msg.role === 'user'">
+          <!-- Avatar -->
+          <div class="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold"
+            [class.bg-slate-900]="msg.role === 'user'" [class.text-white]="msg.role === 'user'"
+            [class.bg-slate-200]="msg.role !== 'user'" [class.text-slate-700]="msg.role !== 'user'"
+            [class.dark:bg-slate-700]="msg.role !== 'user'" [class.dark:text-slate-50]="msg.role !== 'user'">
+            @if (msg.role === 'user') {
+            <mat-icon class="!w-4 !h-4 !text-[16px] flex items-center justify-center">person</mat-icon>
+            } @else {
+            AI
+            }
+          </div>
+
+          <!-- Bubble -->
+          <div class="max-w-[85%]">
+            <div class="message-bubble p-4 rounded-2xl shadow-sm border" [class.bg-slate-900]="msg.role === 'user'"
+              [class.text-white]="msg.role === 'user'" [class.border-slate-800]="msg.role === 'user'"
+              [class.rounded-tr-sm]="msg.role === 'user'" [class.bg-white]="msg.role !== 'user'"
+              [class.text-slate-700]="msg.role !== 'user'" [class.dark:bg-slate-800]="msg.role !== 'user'"
+              [class.dark:text-slate-200]="msg.role !== 'user'" [class.border-slate-200]="msg.role !== 'user'"
+              [class.dark:border-slate-700]="msg.role !== 'user'" [class.rounded-tl-sm]="msg.role !== 'user'">
+              <!-- Response Type Badge (for assistant messages) -->
+              @if (msg.role === 'assistant' && msg.response_type) {
+              <div class="flex items-center gap-1.5 mb-2">
+                @if (msg.response_type === 'api_execution') {
+                <span
+                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-[10px] font-semibold">
+                  <mat-icon class="!w-3 !h-3 !text-[12px]">play_arrow</mat-icon>
+                  API Execution
+                </span>
+                } @else if (msg.response_type === 'guided_flow') {
+                <span
+                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-semibold">
+                  <mat-icon class="!w-3 !h-3 !text-[12px]">help_outline</mat-icon>
+                  Gathering Info
+                </span>
+                } @else {
+                <span
+                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-[10px] font-semibold">
+                  <mat-icon class="!w-3 !h-3 !text-[12px]">menu_book</mat-icon>
+                  Documentation
+                </span>
+                }
+              </div>
+              }
+
+              <!-- Content -->
+              <div class="markdown-body text-sm leading-relaxed" [innerHTML]="msg.content | markdown"></div>
+
+              <!-- RAG Context Sources - Only show for documentation responses -->
+              @if (msg.response_type === 'documentation' && msg.rag_metadata && msg.rag_metadata.sources.length > 0) {
+              <div class="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700 animate-fadeIn">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                    <mat-icon class="!w-3 !h-3 !text-[12px]">library_books</mat-icon>
+                    Sources
+                  </div>
+                </div>
+
+                <div class="flex flex-wrap gap-2">
+                  @for (source of msg.rag_metadata.sources; track $index) {
+                  @if (source.url) {
+                  <a [href]="source.url" target="_blank"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 transition-all cursor-pointer shadow-sm max-w-full text-decoration-none"
+                    [matTooltip]="source.title">
+                    <div class="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"></div>
+                    <span
+                      class="text-xs font-medium text-slate-700 dark:text-slate-200 truncate max-w-[180px] hover:text-blue-600 dark:hover:text-blue-400">{{
+                      source.title }}</span>
+                    <!-- Relevance hidden from view as requested, accessible via tooltip -->
+                  </a>
+                  } @else {
+                  <div
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 transition-all cursor-help shadow-sm max-w-full"
+                    [matTooltip]="source.title">
+                    <div class="w-1.5 h-1.5 rounded-full bg-gray-400 shrink-0"></div>
+                    <span class="text-xs font-medium text-slate-700 dark:text-slate-200 truncate max-w-[180px]">{{
+                      source.title }}</span>
+                  </div>
+                  }
+                  }
+                </div>
+
+                @if (
+                msg.rag_metadata.validationResult?.warnings?.length > 0
+                ) {
+                <div
+                  class="mt-2 text-[10px] text-orange-600 dark:text-orange-400 flex items-start gap-1 bg-orange-50 dark:bg-orange-900/10 p-2 rounded border border-orange-100 dark:border-orange-900/30">
+                  <mat-icon class="!w-3 !h-3 !text-[12px] mt-0.5">info</mat-icon>
+                  <div>
+                    @for (
+                    warn of msg.rag_metadata.validationResult.warnings;
+                    track $index
+                    ) {
+                    <div>{{ warn }}</div>
+                    }
+                  </div>
+                </div>
+                }
+              </div>
+              }
+
+              <!-- Images -->
+              @if (msg.images && msg.images.length > 0) {
+              <div class="flex flex-wrap gap-2 mt-3">
+                @for (imgSrc of msg.images; track $index) {
+                <img [src]="getImageUrl(imgSrc)"
+                  class="max-w-[200px] h-auto rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer hover:opacity-90 transition-opacity"
+                  (click)="
+                            $event.stopPropagation(); window.open(getImageUrl(imgSrc), '_blank')
+                          " />
+                }
+              </div>
+              }
+
+              <!-- Payment Request -->
+              @if (msg.payment_required) {
+              <div
+                class="mt-4 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-700">
+                <div class="flex items-center gap-2 mb-2 text-slate-900 dark:text-white font-semibold">
+                  <span class="text-amber-500">⚡</span>
+                  {{ 'chat.payment.required' | transloco }}
+                </div>
+                <div class="text-xl font-bold mb-2 text-slate-800 dark:text-slate-100">
+                  {{ msg.payment_required.amount }} AVAX
+                </div>
+                <div class="text-xs text-slate-500 mb-3 break-all font-mono">
+                  To: {{ msg.payment_required.receiver_address }}
+                </div>
+                <button mat-flat-button color="primary" class="w-full" (click)="confirmPayment($index)">
+                  {{ 'chat.payment.payBtn' | transloco }}
+                </button>
+              </div>
+              }
+
+              <!-- Data Display -->
+              @if (msg.data) {
+              <div
+                class="mt-3 p-3 bg-slate-100 dark:bg-slate-950 rounded-lg text-xs font-mono overflow-x-auto border border-slate-200 dark:border-slate-800">
+                <pre class="whitespace-pre-wrap">{{ msg.data | json }}</pre>
+              </div>
+
+              @if (msg.proof) {
+              <div
+                class="mt-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
+                    <mat-icon class="!w-4 !h-4 !text-[16px]">verified</mat-icon>
+                  </div>
+                  <div class="text-xs text-green-800 dark:text-green-300 font-medium">
+                    Validated On-Chain
+                  </div>
+                </div>
+                <a [href]="'https://testnet.snowtrace.io/tx/' + msg.proof" target="_blank"
+                  class="text-xs text-green-600 hover:underline flex items-center gap-1">
+                  View TX <mat-icon class="!w-3 !h-3 !text-[12px]">open_in_new</mat-icon>
+                </a>
+              </div>
+              }
+
+              @if (chatMode() === 'x402' && msg.role === 'assistant') {
+              <button
+                class="mt-3 text-xs text-slate-400 hover:text-yellow-500 flex items-center gap-1 transition-colors"
+                (click)="openFeedbackModal()">
+                <mat-icon class="!w-3 !h-3 !text-[12px]">star_outline</mat-icon> Rate this
+              </button>
+              }
+              }
+            </div>
+          </div>
+        </div>
+        }
         }
 
         <!-- Typing Indicator -->
         @if (isLoading()) {
-          <div class="message flex gap-4">
-            <div
-              class="w-8 h-8 rounded-full bg-slate-900 text-white flex-shrink-0 flex items-center justify-center text-xs font-bold"
-            >
-              AI
-            </div>
-            <div
-              class="message-bubble p-4 rounded-2xl rounded-tl-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm"
-            >
-              <div class="flex items-center gap-1.5">
-                <div class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></div>
-                <div class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-150"></div>
-                <div class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-300"></div>
-              </div>
-              <!-- Thinking Steps -->
-              @if (thinkingSteps().length > 0) {
-                <div
-                  class="mt-2 text-xs text-slate-400 border-t border-slate-100 dark:border-slate-700 pt-2 animate-fadeIn"
-                >
-                  {{ currentThinkingStep() | transloco }}
-                </div>
-              }
-            </div>
+        <div class="message flex gap-4">
+          <div
+            class="w-8 h-8 rounded-full bg-slate-900 text-white flex-shrink-0 flex items-center justify-center text-xs font-bold">
+            AI
           </div>
+          <div
+            class="message-bubble p-4 rounded-2xl rounded-tl-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <div class="flex items-center gap-1.5">
+              <div class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></div>
+              <div class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-150"></div>
+              <div class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-300"></div>
+            </div>
+            <!-- Thinking Steps -->
+            @if (thinkingSteps().length > 0) {
+            <div
+              class="mt-2 text-xs text-slate-400 border-t border-slate-100 dark:border-slate-700 pt-2 animate-fadeIn">
+              {{ currentThinkingStep() | transloco }}
+            </div>
+            }
+          </div>
+        </div>
         }
       </div>
     </div>
 
     <!-- Input Area -->
     <div
-      class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shrink-0 z-10"
-    >
+      class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:px-6 shrink-0 z-10 shadow-[0_-1px_3px_rgba(0,0,0,0.02)]">
       <!-- Attachment Previews -->
       @if (pendingAttachments().length > 0) {
-        <div class="max-w-4xl mx-auto mb-3 pl-12">
-          <div class="flex gap-3 overflow-x-auto pb-2">
-            @for (img of pendingAttachments(); track $index) {
-              <div
-                class="relative group w-20 h-20 shrink-0 cursor-zoom-in"
-                (click)="openImagePreview(img)"
-              >
-                <img
-                  [src]="img"
-                  class="w-full h-full object-cover rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm"
-                />
-                <button
-                  (click)="$event.stopPropagation(); removeAttachment($index)"
-                  class="absolute top-1 right-1 w-6 h-6 bg-black/50 hover:bg-red-500 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition-colors shadow-sm"
-                >
-                  <mat-icon class="!w-4 !h-4 !text-[14px] flex items-center justify-center"
-                    >close</mat-icon
-                  >
-                </button>
-              </div>
-            }
+      <div class="max-w-6xl mx-auto mb-3 pl-12">
+        <div class="flex gap-3 overflow-x-auto pb-2">
+          @for (img of pendingAttachments(); track $index) {
+          <div class="relative group w-20 h-20 shrink-0 cursor-zoom-in" (click)="openImagePreview(img)">
+            <img [src]="img"
+              class="w-full h-full object-cover rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm" />
+            <button (click)="$event.stopPropagation(); removeAttachment($index)"
+              class="absolute top-1 right-1 w-6 h-6 bg-black/50 hover:bg-red-500 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition-colors shadow-sm">
+              <mat-icon class="!w-4 !h-4 !text-[14px] flex items-center justify-center">close</mat-icon>
+            </button>
           </div>
+          }
         </div>
+      </div>
       }
 
-      <div class="max-w-4xl mx-auto flex gap-3 items-center relative">
+      <div class="max-w-6xl mx-auto flex gap-3 items-center relative">
         <!-- File Input (Hidden) -->
-        <input
-          type="file"
-          #fileInput
-          hidden
-          multiple
-          accept="image/*"
-          (change)="onFileSelected($event)"
-        />
+        <input type="file" #fileInput hidden multiple accept="image/*" (change)="onFileSelected($event)" />
 
         <!-- Attach Button -->
-        <button
-          mat-icon-button
-          (click)="fileInput.click()"
+        <button mat-icon-button (click)="fileInput.click()"
           class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-          matTooltip="Attach image"
-        >
+          matTooltip="Attach image">
           <mat-icon>attach_file</mat-icon>
         </button>
 
-        <input
-          [(ngModel)]="userInput"
-          (keyup.enter)="sendMessage()"
-          (paste)="onPaste($event)"
-          type="text"
+        <input [(ngModel)]="userInput" (keyup.enter)="sendMessage()" (paste)="onPaste($event)" type="text"
           [placeholder]="'chat.inputPlaceholder' | transloco"
-          class="flex-1 h-12 pl-4 pr-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none transition-all placeholder:text-slate-400 shadow-sm"
-        />
+          class="flex-1 h-12 pl-4 pr-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 outline-none transition-all placeholder:text-slate-400 shadow-sm" />
 
-        <button
-          (click)="sendMessage()"
+        <button (click)="sendMessage()"
           [disabled]="isLoading() || (!userInput().trim() && pendingAttachments().length === 0)"
-          class="absolute right-2 top-2 h-8 w-8 flex items-center justify-center rounded-lg bg-slate-900 text-white hover:bg-slate-700 disabled:opacity-50 disabled:bg-slate-200 disabled:text-slate-400 transition-all shadow-md"
-        >
+          class="absolute right-2 top-2 h-8 w-8 flex items-center justify-center rounded-lg bg-slate-900 text-white hover:bg-slate-700 disabled:opacity-50 disabled:bg-slate-200 disabled:text-slate-400 transition-all shadow-md">
           @if (isLoading()) {
-            <mat-progress-spinner
-              mode="indeterminate"
-              diameter="16"
-              color="accent"
-            ></mat-progress-spinner>
+          <mat-progress-spinner mode="indeterminate" diameter="16" color="accent"></mat-progress-spinner>
           } @else {
-            <mat-icon class="!w-4 !h-4 !text-[16px]">arrow_upward</mat-icon>
+          <mat-icon class="!w-4 !h-4 !text-[16px]">arrow_upward</mat-icon>
           }
         </button>
       </div>
@@ -625,159 +540,135 @@
 
   <!-- Image Preview Modal -->
   @if (previewImage()) {
-    <div
-      class="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-fadeIn"
-      (click)="closeImagePreview()"
-    >
-      <button
-        class="absolute top-4 right-4 text-white/70 hover:text-white transition-colors"
-        (click)="closeImagePreview()"
-      >
-        <mat-icon class="!w-8 !h-8 !text-[32px]">close</mat-icon>
-      </button>
+  <div class="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-fadeIn"
+    (click)="closeImagePreview()">
+    <button class="absolute top-4 right-4 text-white/70 hover:text-white transition-colors"
+      (click)="closeImagePreview()">
+      <mat-icon class="!w-8 !h-8 !text-[32px]">close</mat-icon>
+    </button>
 
-      <img
-        [src]="previewImage()"
-        class="max-w-full max-h-[90vh] rounded-lg shadow-2xl animate-scaleIn object-contain"
-        (click)="$event.stopPropagation()"
-      />
-    </div>
+    <img [src]="previewImage()" class="max-w-full max-h-[90vh] rounded-lg shadow-2xl animate-scaleIn object-contain"
+      (click)="$event.stopPropagation()" />
+  </div>
   }
 
   <!-- Agent Info Modal -->
   @if (showAgentInfoModal()) {
-    <div
-      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-fadeIn"
-      (click)="toggleAgentInfoModal()"
-    >
-      <!-- Reuse existing content style but ensure it's centered -->
-      <div
-        class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto"
-        (click)="$event.stopPropagation()"
-      >
-        <div class="p-6">
-          <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-bold dark:text-white">
-              {{ 'chat.agentInfo.title' | transloco }}
-            </h2>
-            <button (click)="toggleAgentInfoModal()" class="text-slate-400 hover:text-slate-600">
-              <mat-icon>close</mat-icon>
-            </button>
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-fadeIn"
+    (click)="toggleAgentInfoModal()">
+    <!-- Reuse existing content style but ensure it's centered -->
+    <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto"
+      (click)="$event.stopPropagation()">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold dark:text-white">
+            {{ 'chat.agentInfo.title' | transloco }}
+          </h2>
+          <button (click)="toggleAgentInfoModal()" class="text-slate-400 hover:text-slate-600">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+        <!-- Content same as before logic... simplified for brevity, assume content matches -->
+        <!-- We rely on component logic for data -->
+        <div class="space-y-4">
+          @if (isLoadingAgentInfo()) {
+          <mat-progress-spinner mode="indeterminate" diameter="30"></mat-progress-spinner>
+          } @else {
+          <div class="flex items-start gap-4">
+            <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-2xl">
+              🤖
+            </div>
+            <div>
+              <h3 class="font-bold text-lg dark:text-white">
+                {{ agentInfo()?.identity?.name }}
+              </h3>
+              <p class="text-sm text-slate-500">{{ agentInfo()?.identity?.description }}</p>
+            </div>
           </div>
-          <!-- Content same as before logic... simplified for brevity, assume content matches -->
-          <!-- We rely on component logic for data -->
-          <div class="space-y-4">
-            @if (isLoadingAgentInfo()) {
-              <mat-progress-spinner mode="indeterminate" diameter="30"></mat-progress-spinner>
-            } @else {
-              <div class="flex items-start gap-4">
-                <div
-                  class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-2xl"
-                >
-                  🤖
-                </div>
-                <div>
-                  <h3 class="font-bold text-lg dark:text-white">
-                    {{ agentInfo()?.identity?.name }}
-                  </h3>
-                  <p class="text-sm text-slate-500">{{ agentInfo()?.identity?.description }}</p>
-                </div>
+          <!-- Stats -->
+          <div class="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-800 p-3 rounded-lg">
+            <div class="text-center">
+              <div class="font-bold text-xl dark:text-white">
+                {{ agentInfo()?.reputation?.averageRating?.toFixed(1) || '0.0' }}
               </div>
-              <!-- Stats -->
-              <div class="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-800 p-3 rounded-lg">
-                <div class="text-center">
-                  <div class="font-bold text-xl dark:text-white">
-                    {{ agentInfo()?.reputation?.averageRating?.toFixed(1) || '0.0' }}
-                  </div>
-                  <div class="text-[10px] text-slate-500 uppercase">Rating</div>
-                </div>
-                <div class="text-center border-l border-slate-200 dark:border-slate-700">
-                  <div class="font-bold text-xl dark:text-white">
-                    {{ agentInfo()?.reputation?.totalFeedbacks || 0 }}
-                  </div>
-                  <div class="text-[10px] text-slate-500 uppercase">Reviews</div>
-                </div>
-                <div class="text-center border-l border-slate-200 dark:border-slate-700">
-                  <div class="font-bold text-xl dark:text-white">
-                    {{ agentInfo()?.identity?.active ? 'ON' : 'OFF' }}
-                  </div>
-                  <div class="text-[10px] text-slate-500 uppercase">Status</div>
-                </div>
+              <div class="text-[10px] text-slate-500 uppercase">Rating</div>
+            </div>
+            <div class="text-center border-l border-slate-200 dark:border-slate-700">
+              <div class="font-bold text-xl dark:text-white">
+                {{ agentInfo()?.reputation?.totalFeedbacks || 0 }}
               </div>
-              <!-- Address -->
-              <div
-                class="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg text-xs font-mono break-all text-slate-600 dark:text-slate-300"
-              >
-                {{ agentInfo()?.identity?.agentAddress }}
+              <div class="text-[10px] text-slate-500 uppercase">Reviews</div>
+            </div>
+            <div class="text-center border-l border-slate-200 dark:border-slate-700">
+              <div class="font-bold text-xl dark:text-white">
+                {{ agentInfo()?.identity?.active ? 'ON' : 'OFF' }}
               </div>
-            }
+              <div class="text-[10px] text-slate-500 uppercase">Status</div>
+            </div>
           </div>
+          <!-- Address -->
+          <div
+            class="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg text-xs font-mono break-all text-slate-600 dark:text-slate-300">
+            {{ agentInfo()?.identity?.agentAddress }}
+          </div>
+          }
         </div>
       </div>
     </div>
+  </div>
   }
 
   <!-- Wallet Modal -->
   @if (showWalletModal()) {
-    <div
-      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-fadeIn"
-      (click)="toggleWalletModal()"
-    >
-      <div
-        class="w-full max-w-sm mx-auto p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl relative animate-slideUp"
-        (click)="$event.stopPropagation()"
-      >
-        <!-- Content reused from previous template, simplified structure -->
-        <button
-          class="absolute right-4 top-4 text-slate-400 hover:text-slate-600"
-          (click)="toggleWalletModal()"
-        >
-          <mat-icon>close</mat-icon>
-        </button>
-        <h2 class="text-xl font-bold mb-4 dark:text-white">
-          {{ 'chat.walletModal.title' | transloco }}
-        </h2>
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-fadeIn"
+    (click)="toggleWalletModal()">
+    <div class="w-full max-w-sm mx-auto p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl relative animate-slideUp"
+      (click)="$event.stopPropagation()">
+      <!-- Content reused from previous template, simplified structure -->
+      <button class="absolute right-4 top-4 text-slate-400 hover:text-slate-600" (click)="toggleWalletModal()">
+        <mat-icon>close</mat-icon>
+      </button>
+      <h2 class="text-xl font-bold mb-4 dark:text-white">
+        {{ 'chat.walletModal.title' | transloco }}
+      </h2>
 
-        @if (walletQrCode()) {
-          <div class="flex justify-center mb-4">
-            <img [src]="walletQrCode()" class="w-32 h-32 rounded-lg border" />
-          </div>
-        }
-
-        <div class="mb-4">
-          <label class="text-xs text-slate-500 uppercase">Address</label>
-          <div class="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg flex gap-2 items-center">
-            <code class="text-xs flex-1 break-all dark:text-slate-300">{{ walletAddress() }}</code>
-            <button (click)="copyAddress()">
-              <mat-icon class="text-slate-400 hover:text-blue-500 !w-4 !h-4 text-[16px]"
-                >content_copy</mat-icon
-              >
-            </button>
-          </div>
-        </div>
-
-        <div class="mb-6">
-          <label class="text-xs text-slate-500 uppercase">Balance</label>
-          <div class="text-3xl font-bold dark:text-white">
-            {{ walletBalance() | number: '1.4-4' }}
-            <span class="text-sm font-normal text-slate-400">AVAX</span>
-          </div>
-        </div>
-
-        <button mat-stroked-button class="w-full mb-2" (click)="refreshBalance()">Refresh</button>
-        <button mat-stroked-button color="warn" class="w-full" (click)="resetWallet()">
-          Reset Wallet
-        </button>
+      @if (walletQrCode()) {
+      <div class="flex justify-center mb-4">
+        <img [src]="walletQrCode()" class="w-32 h-32 rounded-lg border" />
       </div>
+      }
+
+      <div class="mb-4">
+        <label class="text-xs text-slate-500 uppercase">Address</label>
+        <div class="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg flex gap-2 items-center">
+          <code class="text-xs flex-1 break-all dark:text-slate-300">{{ walletAddress() }}</code>
+          <button (click)="copyAddress()">
+            <mat-icon class="text-slate-400 hover:text-blue-500 !w-4 !h-4 text-[16px]">content_copy</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="mb-6">
+        <label class="text-xs text-slate-500 uppercase">Balance</label>
+        <div class="text-3xl font-bold dark:text-white">
+          {{ walletBalance() | number: '1.4-4' }}
+          <span class="text-sm font-normal text-slate-400">AVAX</span>
+        </div>
+      </div>
+
+      <button mat-stroked-button class="w-full mb-2" (click)="refreshBalance()">Refresh</button>
+      <button mat-stroked-button color="warn" class="w-full" (click)="resetWallet()">
+        Reset Wallet
+      </button>
     </div>
+  </div>
   }
 
   <!-- Toasts -->
   @if (showToast()) {
-    <div
-      class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-[60] bg-slate-800 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm animate-slideUpFade"
-    >
-      <mat-icon class="!w-4 !h-4 text-[16px]">check_circle</mat-icon> {{ toastMessage() }}
-    </div>
+  <div
+    class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-[60] bg-slate-800 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm animate-slideUpFade">
+    <mat-icon class="!w-4 !h-4 text-[16px]">check_circle</mat-icon> {{ toastMessage() }}
+  </div>
   }
 </div>

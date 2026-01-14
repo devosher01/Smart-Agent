@@ -9,6 +9,11 @@ router.get("/public", (ctx) => {
 	ctx.body = { message: "This is a public endpoint" };
 });
 
+// Debug endpoint to test error handling
+router.get("/debug/error", (ctx) => {
+	throw new Error("This is a deliberate error for testing the global middleware.");
+});
+
 require("./unprotected-routes")(router);
 
 // Serve Uploads

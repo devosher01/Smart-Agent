@@ -44,6 +44,12 @@ interface ChatMessage {
   data?: any;
   proof?: string;
   images?: string[];
+  rag_metadata?: {
+    sources: { title: string; score: number; url?: string }[];
+    groundedness: string;
+    avgScore: number;
+    validationResult: any;
+  };
 }
 
 interface ConversationSummary {
@@ -149,7 +155,7 @@ export class ChatComponent implements OnInit {
     private http: HttpClient,
     public walletService: AgentWalletService,
     private _matDialog: MatDialog,
-  ) {}
+  ) { }
 
   async ngOnInit() {
     this.walletAddress.set(this.walletService.getAddress());
@@ -422,6 +428,7 @@ export class ChatComponent implements OnInit {
     const hasWallet = !!this.walletService.getAddress();
     const hasCredits = !!localStorage.getItem('accessToken');
 
+    /*
     if (!hasWallet && !hasCredits) {
       this.openAuthModal();
       return;
@@ -434,6 +441,7 @@ export class ChatComponent implements OnInit {
       this.openAuthModal();
       return;
     }
+    */
 
     // Creating a message object to display immediately
     const userMsg: ChatMessage = {
@@ -503,6 +511,7 @@ export class ChatComponent implements OnInit {
           data: response.data,
           proof: response.proof,
           images: response.images, // Backend should return image URLs if any were processed/saved
+          rag_metadata: response.rag_metadata,
         };
 
         this.messages.update((msgs) => [...msgs, msg]);

@@ -79,7 +79,7 @@ const handleRequest = async (ctx) => {
 		// 4. Record Validation Proof if Payment was used
 		if (ctx.state.payment && response.status < 400 && config.erc8004.validationRegistry) {
 			try {
-				const { recordValidationProof } = require("../modules/agent.module");
+				const { recordValidationProof } = require("../core/agent");
 				const toolName = targetUrl.split("/").pop() || "unknown-api";
 
 				// We need to parse the args logic slightly differently for proxy,

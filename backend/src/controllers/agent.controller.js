@@ -1,4 +1,4 @@
-const AgentModule = require("../modules/agent.module");
+const AgentModule = require("../core/agent");
 const ConversationRepository = require("../repositories/conversation.repository");
 
 /**
@@ -19,11 +19,11 @@ const chat = async (ctx) => {
 
 		if (!message && (!images || images.length === 0)) {
 			ctx.status = 400;
-			ctx.body = { error: "Message or image is required" };
+			ctx.body = { error: "A message or an image is required" };
 			return;
 		}
 
-		// If success, record validation proof on-chain (ERC8004)
+		// If successful, record validation proof on-chain (ERC8004)
 		let conversation = null;
 		let history = [];
 
@@ -34,7 +34,7 @@ const chat = async (ctx) => {
 			}
 		}
 
-		// Process Images if any
+		// Process images if any
 		let processedImages = [];
 		if (images && Array.isArray(images)) {
 			processedImages = images
