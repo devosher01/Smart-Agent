@@ -1,6 +1,7 @@
 [build]
 builder = "RAILPACK"
 buildCommand = "npm run build"
+watchPatterns = ["/frontend/**"]
 
 [deploy]
 startCommand = "npm run serve"
