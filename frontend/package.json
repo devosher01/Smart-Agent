@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --port=4201",
+    "dev": "ng serve --port=4201",
     "build": "ng build --configuration production",
-    "serve": "node server.js",
+    "start": "node server.js",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
